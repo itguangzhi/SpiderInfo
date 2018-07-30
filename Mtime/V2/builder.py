@@ -46,9 +46,46 @@ PropertiesFile = r'./filename.properties'
 
 class KVbuildSQL():
     # 构建存储到sqlserver的入库语句
-    def sqlserverbuild(self,field,values):
+
+    def sqlserverbuild(self, tbl):
+        field = ''
+        value = ''
+        using = ''
+        updatedata = ''
+
+        for field in tbl:
+            val1 = str(tbl[field])+' AS ' + str(field)
+            usingline = usingline + ' , ' + val1
+            val2 = field + '=' + str(tbl[field])
+            updatedataline = updatedata + ',' + val2
+            fields = fields + ',' + field
+            values = values + ',' + str(tbl[field])
+
+        useing = list(usingline)
+        useing[0] = 'select '
+        using = ''.join(useing)
+
+        updat = list(updatedataline)
+        updat[0] = ' '
+        updatedata = ''.join(updat)
+
+        updat = list(fields)
+        updat[0] = ' '
+        fields = ''.join(updat)
+
+        updat = list(values)
+        updat[0] = ' '
+        values = ''.join(updat)
+
         tablename = Properties(PropertiesFile).getProperties()['sqlserver']['table']
-        sql = ""
+        sql = "merge into " + tablename + " as a " \
+                                         " using (" + using + ") as b " \
+                                                              " on a.movie_id = b.movie_id " \
+                                                              " when matched then " \
+                                                              " update set " + updatedata + \
+             " when not matched then " \
+             " insert (%s)VALUES(%s);" % (fields, values)
+        return sql
 
 
 
@@ -69,7 +106,6 @@ class KVbuildSQL():
         value[0] = ''
         values = ''.join(value)
 
-
-        Tbname = Properties(PropertiesFile).getProperties()['mysql']['111']['table']
+        Tbname = Properties(PropertiesFile).getProperties()['spider']['table']
         sql = "replace into %s (%s)VALUES(%s);" % (Tbname, field, values)
         return sql
