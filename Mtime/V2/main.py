@@ -38,11 +38,12 @@
 # @ContactPhone : 13121961510 
 # @Date  : 2018-07-16 - 11:44
 # @Desc  : 这里是主方法，用于运行整个爬虫内容
-from getinfo import tomovieinfo
-from builder import KVbuildSQL
-from connectionDB import SaveData
-from selector import selectID
-import sys
+
+from Mtime.V2.getinfo import tomovieinfo
+from Mtime.V2.builder import KVbuildSQL
+from Mtime.V2.connectionDB import SaveData
+from Mtime.V2.selector import selectID
+
 
 # 爬虫结果放到MySQL中（要把大象放冰箱，总共分几步？）
 def replaceToMysql(x):
@@ -50,7 +51,7 @@ def replaceToMysql(x):
     print(pageinfomation)
     saveinfomation = KVbuildSQL.mysqlbuild(pageinfomation[0], str(pageinfomation[1]).replace('[', '').replace(']', ''))
     print(saveinfomation)
-    # SaveData.savemysql(saveinfomation)
+    SaveData.savemysql(saveinfomation)
 
 
 def mergeToSqlserver(x):
