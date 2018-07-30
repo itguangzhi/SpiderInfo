@@ -41,7 +41,7 @@
 
 import pymysql
 import pymssql
-from Util import Properties
+from Mtime.V2.Util import Properties
 
 
 global PropertiesFile

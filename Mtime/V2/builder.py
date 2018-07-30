@@ -38,7 +38,7 @@
 # @ContactPhone : 13121961510 
 # @Date  : 2018-07-16 - 17:06
 # @Desc  :  构建入库sql
-from Util import Properties
+from Mtime.V2.Util import Properties
 
 global PropertiesFile
 PropertiesFile = r'./filename.properties'

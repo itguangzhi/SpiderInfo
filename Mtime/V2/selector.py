@@ -40,7 +40,7 @@
 # @Desc  : ID选择器，区分不同业务的重要工具
 import re
 from urllib.request import urlopen
-from connectionDB import SelectData
+from Mtime.V2.connectionDB import SelectData
 
 class selectID():
     # 数据来于网页即将上映的影片ID
