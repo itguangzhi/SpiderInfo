@@ -119,13 +119,13 @@ class SelectData(object):
     # 查询mysql中数据
     def selectmysql(self, sql, host):
         try:
-            hostname = Properties(PropertiesFile).getProperties()['mysql'][str(host)]['host']
-            database = Properties(PropertiesFile).getProperties()['mysql'][str(host)]['database']
-            port = int(Properties(PropertiesFile).getProperties()['mysql'][str(host)]['port'])
-            username = Properties(PropertiesFile).getProperties()['mysql'][str(host)]['username']
-            passwd = Properties(PropertiesFile).getProperties()['mysql'][str(host)]['passwd']
-            charset = Properties(PropertiesFile).getProperties()['mysql'][str(host)]['charset']
-        except Exception as  ess:
+            hostname = Properties(PropertiesFile).getProperties()['spider']['host']
+            database = Properties(PropertiesFile).getProperties()['spider']['database']
+            port = int(Properties(PropertiesFile).getProperties()['spider']['port'])
+            username = Properties(PropertiesFile).getProperties()['spider']['username']
+            passwd = Properties(PropertiesFile).getProperties()['spider']['passwd']
+            charset = Properties(PropertiesFile).getProperties()['spider']['charset']
+        except Exception as ess:
            print('Database Information Error :' + str(ess))
 
         conn = pymysql.connect(host=hostname,

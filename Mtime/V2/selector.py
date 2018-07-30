@@ -42,6 +42,7 @@ import re
 from urllib.request import urlopen
 from Mtime.V2.connectionDB import SelectData
 
+
 class selectID():
     # 数据来于网页即将上映的影片ID
     def getMtimeFultureID(self):
@@ -64,15 +65,11 @@ class selectID():
         return set(pagelist)
 
     # 当前正在上映影片的ID
-    def getReleaseID(self, database='mysql', host=111, releasetype=1):
-        releaseSQL = "SELECT movie_id FROM spiderInc.`Mtime_movieinfo_page` WHERE releaseType='%s';"%str(releasetype)
+    def getReleaseID(self, database='mysql',  releasetype=1):
+        releaseSQL = "SELECT movie_id FROM spiderInc.`Mtime_movieinfo_page` WHERE releaseType='%s';" % str(releasetype)
         if database == 'mysql':
-            IDlist = SelectData.selectmysql(SelectData, releaseSQL, host)
+            IDlist = SelectData.selectmysql(SelectData, releaseSQL)
         elif database == 'sqlserver':
             IDlist = SelectData.selectsqlserver(SelectData, releaseSQL)
 
         return IDlist
-
-
-
-

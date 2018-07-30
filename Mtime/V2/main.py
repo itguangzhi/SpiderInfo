@@ -57,22 +57,21 @@ def replaceToMysql(x):
 def mergeToSqlserver(x):
     ''
 
+
 def updateToSqlserver(x):
     ''
 
 
 # 更新数据库中上映状态为1的影片
 def updateReleaseType(type=1):
-
-    #default type = 1
+    # default type = 1
 
     try:
         IDlist = selectID.getReleaseID(selectID,
                                        database='mysql',
-                                       host=111,
                                        releasetype=type)
         print('Step [01] Load IDlist is well ')
-        if len(IDlist)==0:
+        if len(IDlist) == 0:
             print('No new IDlist')
     except Exception as es:
         print('Step [01] Load IDlist in ERROR')
@@ -91,7 +90,7 @@ def updateReleaseType(type=1):
             continue
 
         try:
-            SQL = KVbuildSQL.mysqlbuild(KVbuildSQL,pageinfo)
+            SQL = KVbuildSQL.mysqlbuild(KVbuildSQL, pageinfo)
             print(SQL)
             print('Step [03] building SQL is well')
         except Exception as es:

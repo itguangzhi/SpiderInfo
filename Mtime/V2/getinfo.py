@@ -38,6 +38,7 @@
 # @ContactPhone : 13121961510 
 # @Date  : 2018-07-16 - 11:47
 # @Desc  : 获取页面信息内容,传入影片id（type = int）,返回影片信息 （type = dict）
+import datetime
 import html
 import re
 from urllib.request import urlopen
@@ -186,8 +187,7 @@ class pageinfo():
             ScreenWriter, DistributionEnterprise, MoviePlot, ReleasedYear, TrailerNum, TrailerUrl, ActorNum, ActorUrl,
             ImageNum,
             ImageUrl, CommentNum, CommentUrl, CommentShortUrl, NewsNum, NewsUrl)
-
-
+        movieDIR["creation_date"]= nowtime = str(datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
 
         # return key, value
         return movieDIR
