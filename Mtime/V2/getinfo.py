@@ -53,9 +53,10 @@ class pageinfo():
     返回值:数据库的列明和值
     """
     def getMovieContent(self,x, page):
-        Url = r'http://movie.mtime.com/%d/' % x
+        Url = r'http://movie.mtime.com/%d/' % int(x)
 
         movieDIR = {}
+        movieDIR['movie_id'] = str(x)
         # 1 影片名称
         movieDIR['Movie_url'] = Url
         MovieNameReg = 'property="v:itemreviewed">(.*?)</h1>'
@@ -187,7 +188,7 @@ class pageinfo():
             ScreenWriter, DistributionEnterprise, MoviePlot, ReleasedYear, TrailerNum, TrailerUrl, ActorNum, ActorUrl,
             ImageNum,
             ImageUrl, CommentNum, CommentUrl, CommentShortUrl, NewsNum, NewsUrl)
-        movieDIR["creation_date"]= nowtime = str(datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+        movieDIR["lastupdate_time"]= nowtime = str(datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
 
         # return key, value
         return movieDIR
@@ -276,7 +277,7 @@ class pageinfo():
         '''
         movieRATE = {}
         try:
-            ratingsurl = 'http://service.library.mtime.com/Movie.api?Ajax_CallBack=true&Ajax_CallBackType=Mtime.Library.Services&Ajax_CallBackArgument0=%d&Ajax_CallBackMethod=GetMovieOverviewRating' % x
+            ratingsurl = 'http://service.library.mtime.com/Movie.api?Ajax_CallBack=true&Ajax_CallBackType=Mtime.Library.Services&Ajax_CallBackArgument0=%d&Ajax_CallBackMethod=GetMovieOverviewRating' % int(x)
             movie = urlopen(ratingsurl)
             page = str(movie.read(), 'utf-8').replace('var movieOverviewRatingResult = ', '').replace(';', '')
             # 接口返回内容
@@ -351,6 +352,7 @@ class pageinfo():
             value = (
             movie_Id, RatingFinal, Usercount, AttitudeCount, Rank, TotalBoxOffice, TodayBoxOffice, ShowDays, EndDate,
             FirstDayBoxOffice, releaseType)
+
             return movieRATE
             # return key, value
         except Exception as f:
@@ -439,5 +441,5 @@ def tomovieinfo(x):
 
 
 if __name__ == '__main__':
-    a = tomovieinfo(12060)
+    a = tomovieinfo(142177)
     print(a)

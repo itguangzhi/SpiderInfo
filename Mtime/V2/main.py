@@ -43,24 +43,29 @@ from Mtime.V2.getinfo import tomovieinfo
 from Mtime.V2.builder import KVbuildSQL
 from Mtime.V2.connectionDB import SaveData
 from Mtime.V2.selector import selectID
+from Mtime.V2.future import comingReginList
+
+
+def getComingReleaseMovie():
+    movielist = comingReginList.comingReginLists.gettfulturemovieUrl(comingReginList.comingReginLists)
+    for movieid in movielist:
+        replaceToMysql(movieid)
 
 
 # 爬虫结果放到MySQL中（要把大象放冰箱，总共分几步？）
 def replaceToMysql(x):
     pageinfomation = tomovieinfo(x)
-    print(pageinfomation)
-    saveinfomation = KVbuildSQL.mysqlbuild(pageinfomation[0], str(pageinfomation[1]).replace('[', '').replace(']', ''))
-    print(saveinfomation)
-    SaveData.savemysql(saveinfomation)
+    # print(pageinfomation)
+    saveinfomation = KVbuildSQL.mysqlbuild(KVbuildSQL, pageinfomation)
+    # print(saveinfomation)
+    SaveData.savemysql(SaveData, saveinfomation)
 
 
 def mergeToSqlserver(x):
     ''
 
-
 def updateToSqlserver(x):
     ''
-
 
 # 更新数据库中上映状态为1的影片
 def updateReleaseType(type=1):
@@ -138,4 +143,4 @@ def updateReleaseType(type=1):
 #         print('Input Coding Error , Please Try Again .')
 #         pass
 
-updateReleaseType(0)
+getComingReleaseMovie()

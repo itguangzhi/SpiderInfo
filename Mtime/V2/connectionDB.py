@@ -40,7 +40,7 @@
 # @Desc  : 数据入库
 
 import pymysql
-import pymssql
+import xlwt
 from Mtime.V2.Util import Properties
 
 
@@ -51,20 +51,20 @@ PropertiesFile = r'./filename.properties'
 class SaveData(object):
 
     # 存储到mysql数据库
-    def savemysql(self, sql, host):
-        hostname = Properties(PropertiesFile).getProperties()['mysql'][str(host)]['host']
-        database = Properties(PropertiesFile).getProperties()['mysql'][str(host)]['database']
-        port     = int(Properties(PropertiesFile).getProperties()['mysql'][str(host)]['port'])
-        username = Properties(PropertiesFile).getProperties()['mysql'][str(host)]['username']
-        passwd   = Properties(PropertiesFile).getProperties()['mysql'][str(host)]['passwd']
-        charset  = Properties(PropertiesFile).getProperties()['mysql'][str(host)]['charset']
-
+    def savemysql(self, sql):
+        hostname = Properties(PropertiesFile).getProperties()['spider']['host']
+        database = Properties(PropertiesFile).getProperties()['spider']['database']
+        port     = int(Properties(PropertiesFile).getProperties()['spider']['port'])
+        username = Properties(PropertiesFile).getProperties()['spider']['username']
+        passwd   = Properties(PropertiesFile).getProperties()['spider']['passwd']
+        # charset  = Properties(PropertiesFile).getProperties()['spider']['charset']
         conn = pymysql.connect(host=hostname,
                                user=username,
                                passwd=passwd,
                                port=port,
                                db=database,
-                               charset=charset)
+                               # charset=charset
+                               )
         try:
             cur = conn.cursor()
         except:
@@ -82,36 +82,37 @@ class SaveData(object):
                 # print('执行成功，数据成功写入')
 
     # 存储到sqlserver数据库
-    def savesqlserver(self, sql):
-
-        hostname = Properties(PropertiesFile).getProperties()['sqlserver']['host']
-        database = Properties(PropertiesFile).getProperties()['sqlserver']['database']
-        port = Properties(PropertiesFile).getProperties()['sqlserver']['port']
-        username = Properties(PropertiesFile).getProperties()['sqlserver']['username']
-        passwd = Properties(PropertiesFile).getProperties()['sqlserver']['passwd']
-        # charset = Properties(PropertiesFile).getProperties()['sqlserver']['charset']
-
-        conn = pymssql.connect(host=hostname,
-                               user=username,
-                               port=port,
-                               password=passwd,
-                               database=database)
-        try:
-            cur = conn.cursor()
-        except:
-            print('-------------连接数据库失败-------------')
-        # 执行sql
-        else:
-            try:
-                # print(sql)
-                # mysql执行sql语句
-                cur.execute(sql)
-            except:
-                print('-------------sql语法错误，执行失败-------------')
-                print(sql)
-            else:
-                conn.commit()
-                # print('执行成功，数据成功写入')
+    # def savesqlserver(self, sql):
+    #     import pymssql
+    #
+    #     hostname = Properties(PropertiesFile).getProperties()['sqlserver']['host']
+    #     database = Properties(PropertiesFile).getProperties()['sqlserver']['database']
+    #     port = Properties(PropertiesFile).getProperties()['sqlserver']['port']
+    #     username = Properties(PropertiesFile).getProperties()['sqlserver']['username']
+    #     passwd = Properties(PropertiesFile).getProperties()['sqlserver']['passwd']
+    #     # charset = Properties(PropertiesFile).getProperties()['sqlserver']['charset']
+    #
+    #     conn = pymssql.connect(host=hostname,
+    #                            user=username,
+    #                            port=port,
+    #                            password=passwd,
+    #                            database=database)
+    #     try:
+    #         cur = conn.cursor()
+    #     except:
+    #         print('-------------连接数据库失败-------------')
+    #     # 执行sql
+    #     else:
+    #         try:
+    #             # print(sql)
+    #             # mysql执行sql语句
+    #             cur.execute(sql)
+    #         except:
+    #             print('-------------sql语法错误，执行失败-------------')
+    #             print(sql)
+    #         else:
+    #             conn.commit()
+    #             # print('执行成功，数据成功写入')
 
 
 class SelectData(object):
@@ -152,32 +153,32 @@ class SelectData(object):
                 print(sql)
 
     # 查询sqlserver中数据
-    def selectsqlserver(self, sql):
-        hostname = Properties(PropertiesFile).getProperties()['sqlserver']['host']
-        database = Properties(PropertiesFile).getProperties()['sqlserver']['database']
-        port = Properties(PropertiesFile).getProperties()['sqlserver']['port']
-        username = Properties(PropertiesFile).getProperties()['sqlserver']['username']
-        passwd = Properties(PropertiesFile).getProperties()['sqlserver']['passwd']
-        # charset = Properties(PropertiesFile).getProperties()['sqlserver']['charset']
-
-        conn = pymssql.connect(host=hostname,
-                               user=username,
-                               port=port,
-                               password=passwd,
-                               database=database)
-        try:
-            cur = conn.cursor()
-        except:
-            print('-------------连接数据库失败-------------')
-        # 执行sql
-        else:
-            try:
-                # print(sql)
-                # mysql执行sql语句
-                cur.execute(sql)
-                # 获取数据库的内容
-                result = cur.fetchall()
-                return result
-            except:
-                print('-------------sql语法错误，执行失败-------------')
-                print(sql)
+    # def selectsqlserver(self, sql):
+    #     hostname = Properties(PropertiesFile).getProperties()['sqlserver']['host']
+    #     database = Properties(PropertiesFile).getProperties()['sqlserver']['database']
+    #     port = Properties(PropertiesFile).getProperties()['sqlserver']['port']
+    #     username = Properties(PropertiesFile).getProperties()['sqlserver']['username']
+    #     passwd = Properties(PropertiesFile).getProperties()['sqlserver']['passwd']
+    #     # charset = Properties(PropertiesFile).getProperties()['sqlserver']['charset']
+    #
+    #     conn = pymssql.connect(host=hostname,
+    #                            user=username,
+    #                            port=port,
+    #                            password=passwd,
+    #                            database=database)
+    #     try:
+    #         cur = conn.cursor()
+    #     except:
+    #         print('-------------连接数据库失败-------------')
+    #     # 执行sql
+    #     else:
+    #         try:
+    #             # print(sql)
+    #             # mysql执行sql语句
+    #             cur.execute(sql)
+    #             # 获取数据库的内容
+    #             result = cur.fetchall()
+    #             return result
+    #         except:
+    #             print('-------------sql语法错误，执行失败-------------')
+    #             print(sql)
