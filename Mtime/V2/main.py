@@ -50,6 +50,7 @@ def getComingReleaseMovie():
     movielist = comingReginList.comingReginLists.gettfulturemovieUrl(comingReginList.comingReginLists)
     for movieid in movielist:
         replaceToMysql(movieid)
+        print(movieid+' is well done ')
 
 
 # 爬虫结果放到MySQL中（要把大象放冰箱，总共分几步？）
