@@ -45,23 +45,39 @@ from Mtime.V2.connectionDB import SaveData
 from Mtime.V2.selector import selectID
 from Mtime.V2.future import comingReginList
 
-
-def getComingReleaseMovie():
+# 获取 即将上映 影片信息并存储到数据库中
+def getComingReleaseMovie(db='mysql'):
     movielist = comingReginList.comingReginLists.gettfulturemovieUrl(comingReginList.comingReginLists)
     for movieid in movielist:
-        replaceToMysql(movieid)
-        print(movieid+' is well done ')
+        pageinfomation = tomovieinfo(movieid)
+        # print(pageinfomation)
+        if db == 'mysql' or db == 'MYSQL' or db == 'Mysql' :
+            replaceToMysql(pageinfomation)
+            print('save mysql '+movieid+' is well done ')
+        elif db == 'sqlserver' or db == 'SQLSERVER' or db == 'SQLServer':
+            mergeToSqlserver(pageinfomation)
+            print('save sqlserver ' + movieid + ' is faild ')
+        elif db == 'ALL' or db == 'all' or db == 'All':
+            replaceToMysql(pageinfomation)
+            print('save mysql ' + movieid + ' is well done ')
+            mergeToSqlserver(pageinfomation)
+            print('save sqlserver ' + movieid + ' is faild ')
+        else:
+            print('你想干啥，存那啊')
+
+# 获取 正在上映 影片信息并存储到数据库中
+def gethotplayMovie():
+    movielist = ''
 
 
 # 爬虫结果放到MySQL中（要把大象放冰箱，总共分几步？）
-def replaceToMysql(x):
-    pageinfomation = tomovieinfo(x)
+def replaceToMysql(pageinfomation):
     # print(pageinfomation)
     saveinfomation = KVbuildSQL.mysqlbuild(KVbuildSQL, pageinfomation)
     # print(saveinfomation)
     SaveData.savemysql(SaveData, saveinfomation)
 
-
+# 爬虫结果放到Sqlserver中（要把大象放冰箱，总共分几步？）
 def mergeToSqlserver(x):
     ''
 
