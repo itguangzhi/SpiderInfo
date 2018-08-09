@@ -86,6 +86,42 @@ class newVIDEO():
             # print(content)
         return contentlib
 
+    def getAsia(self, mainurl, pagenum):
+        adsbegin = int(pagenum)*10+2
+        adsend = int(pagenum+1)*10+2
+        contentlib = []
+        for nm in range(adsbegin, adsend):
+            newurl = mainurl + '/list/2-%s.html'% str(nm)
+            print(newurl)
+            headers = {'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:52.0) Gecko/20100101 Firefox/52.0'}
+            req = Request(url=newurl, headers=headers)
+            page = urlopen(req)
+            pages = str(page.read(), 'utf-8')
+            reg = ' <div class="movielist">.*?<ul class="mlist">(.*?)</ul>'
+            list = re.findall(reg, pages, re.S)[0]
+
+            lists = list.replace('\r\n', ' ')
+            # print(lists)
+            contentReg = '<li> <a href=".*?" title=".*?" target="_blank" class="p"><img src=".*?" alt=".*?" /></a> <div class="info"><h2><a href="(.*?)" title="(.*?)" target="_blank">.*?</a><em></em></h2> <p><i>更新：(.*?)</i></p> <p><i>类型：(.*?)</i></p> <p><i>撸量：.*?</i>.*?</li>'
+            contentlist = re.findall(contentReg, lists, re.S)
+            page.close()
+            # print(contentlist)
+            for av in contentlist:
+                # print(av)
+                content = {}
+
+                content['releasedate'] = av[-2]
+                content['name'] = av[1]
+                content['movieurl'] = av[0]
+                content['type'] = av[-1]
+                idreg = '/vod/(.*?).html'
+                content['id'] = re.findall(idreg, av[0])[0]
+                contentlib.append(content)
+                # print(content)
+
+            # break
+        return contentlib
+
 
     def getContent(self, main, detailURL):
         download = {}
@@ -173,18 +209,20 @@ if __name__ == '__main__':
     menu = 'http://6666av.vip'
 
     socket.setdefaulttimeout(20)
-    contentlist = newVIDEO.getNewList(newVIDEO, menu)
-    # print(len(contentlist))
-    # print(contentlist)
-    for C in contentlist:
-        detailurl = C['movieurl']
-        detail = newVIDEO.getContent(newVIDEO, menu, detailurl)
-        for D in detail:
-            C[D] = detail[D]
-        sql = saveDB.mysqlbuild(saveDB, C)
-        print(sql)
-        cur, conn = saveDB.connection(saveDB)
-        saveDB.exec(saveDB, cur, conn, sql)
-        sleep(1)
+    # contentlist = newVIDEO.getNewList(newVIDEO, menu)
+    for B in range(0, 53):
+        contentlist = newVIDEO.getAsia(newVIDEO, menu, B)
+        # print(len(contentlist))
+        # print(contentlist)
+        for C in contentlist:
+            detailurl = C['movieurl']
+            detail = newVIDEO.getContent(newVIDEO, menu, detailurl)
+            for D in detail:
+                C[D] = detail[D]
+            sql = saveDB.mysqlbuild(saveDB, C)
+            print(sql)
+            cur, conn = saveDB.connection(saveDB)
+            saveDB.exec(saveDB, cur, conn, sql)
+            sleep(1)
 
 
