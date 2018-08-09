@@ -52,7 +52,7 @@ class SaveData(object):
 
     # 存储到mysql数据库
     def savemysql(self, sql):
-        hostname = Properties(PropertiesFile).getProperties()['spider']['host']
+        hostname = Properties(PropertiesFile).getProperties()['mysql']['host']
         database = Properties(PropertiesFile).getProperties()['spider']['database']
         port     = int(Properties(PropertiesFile).getProperties()['spider']['port'])
         username = Properties(PropertiesFile).getProperties()['spider']['username']
