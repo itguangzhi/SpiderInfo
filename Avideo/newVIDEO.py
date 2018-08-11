@@ -47,7 +47,7 @@ import pymysql
 from Avideo.Util import Properties
 import socket
 
-PropertiesFile = r'./filename.properties'
+PropertiesFile = r'../filename.properties'
 
 
 class newVIDEO():
@@ -91,7 +91,7 @@ class newVIDEO():
         adsend = int(pagenum+1)*10+2
         contentlib = []
         for nm in range(adsbegin, adsend):
-            newurl = mainurl + '/list/2-%s.html'% str(nm)
+            newurl = mainurl + '/list/1-%s.html'% str(nm)
             print(newurl)
             headers = {'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:52.0) Gecko/20100101 Firefox/52.0'}
             req = Request(url=newurl, headers=headers)
@@ -150,12 +150,12 @@ class newVIDEO():
 class saveDB():
 
     # 构建存储到mysql的入库语句
-    def mysqlbuild(self, tbl):
+    def mysqlbuild(self, tbl, Tbname):
         field = ''
         values = ''
         for f in tbl:
             field = field + ',' + f
-            values = values + ',' + "'" + tbl[f] + "'"
+            values = values + ',' + "'" + str(tbl[f]) + "'"
         fields = list(field)
 
         fields[0] = ''
@@ -167,7 +167,7 @@ class saveDB():
         values = ''.join(value)
 
         from Avideo.Util import Properties
-        Tbname = 'avideo'
+
         sql = "replace into %s (%s)VALUES(%s);" % (Tbname, field, values)
         return sql
 
@@ -208,9 +208,9 @@ class saveDB():
 if __name__ == '__main__':
     menu = 'http://6666av.vip'
 
-    socket.setdefaulttimeout(20)
+    socket.setdefaulttimeout(100)
     # contentlist = newVIDEO.getNewList(newVIDEO, menu)
-    for B in range(0, 53):
+    for B in range(7, 53):
         contentlist = newVIDEO.getAsia(newVIDEO, menu, B)
         # print(len(contentlist))
         # print(contentlist)
@@ -219,7 +219,7 @@ if __name__ == '__main__':
             detail = newVIDEO.getContent(newVIDEO, menu, detailurl)
             for D in detail:
                 C[D] = detail[D]
-            sql = saveDB.mysqlbuild(saveDB, C)
+            sql = saveDB.mysqlbuild(saveDB, C, 'avideo')
             print(sql)
             cur, conn = saveDB.connection(saveDB)
             saveDB.exec(saveDB, cur, conn, sql)
