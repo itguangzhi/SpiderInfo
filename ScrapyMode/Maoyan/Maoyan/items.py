@@ -8,35 +8,45 @@
 import scrapy
 
 
-class MaoyanItem(scrapy.Item):
+class MaoyanShowItem(scrapy.Item):
     # define the fields for your item here :
+    # 放映情况的数据表结构
+    show_id = scrapy.Field()
+    cinema_id = scrapy.Field()
     movie_id = scrapy.Field()
-    MovieName = scrapy.Field()
-    MovieNameOther = scrapy.Field()
-    MoviePost = scrapy.Field()
-    MovieType = scrapy.Field()
-    ReleasedDate = scrapy.Field()
-    ReleasedArea = scrapy.Field()
-    MovieNation = scrapy.Field()
-    MovieDirector = scrapy.Field()
-    ScreenWriter = scrapy.Field()
-    DistributionEnterpris = scrapy.Field()
-    MoviePlot = scrapy.Field()
-    ReleasedYear = scrapy.Field()
-    WantSeeNum = scrapy.Field()
-    MarkNum = scrapy.Field()
-    Score = scrapy.Field()
-    TrailerNum = scrapy.Field()
-    ActorNum = scrapy.Field()
-    ImageNum = scrapy.Field()
-    CommentNum = scrapy.Field()
+    show_date = scrapy.Field()
+    begin_time = scrapy.Field()
+    end_time = scrapy.Field()
+    language = scrapy.Field()
+    hall = scrapy.Field()
+    pos = scrapy.Field()
+    creation_date = scrapy.Field()
+    last_update_time = scrapy.Field()
 
-    Movie_url = scrapy.Field()
-    TrailerUrl = scrapy.Field()
-    ActorUrl = scrapy.Field()
-    ImageUrl = scrapy.Field()
-    CommentUrl = scrapy.Field()
-    CommentShortUrl = scrapy.Field()
-    NewsNum = scrapy.Field()
-    NewsUrl = scrapy.Field()
 
+class MaoyanMovieItem(scrapy.Item):
+    # define the fields for your item here :
+    movie_name = scrapy.Field()
+
+
+class MaoyanCelebrityItem(scrapy.Item):
+    # define the fields for your item here :
+    pass
+
+
+class MaoyanCinemaItem(scrapy.Item):
+    # define the fields for your item here :
+    # name = scrapy.Field()
+    pass
+
+
+class MaoyanCinemaItem(scrapy.Item):
+    # define the fields for your item here :
+    # name = scrapy.Field()
+    pass
+
+
+class MaoyanCityItem(scrapy.Item):
+    # define the fields for your item here :
+    # name = scrapy.Field()
+    pass

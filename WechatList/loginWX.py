@@ -132,11 +132,11 @@ for r in chatrooms:
     print('ok')
 '''
 username = '@@2c0f5c652472dbe2da0279d794e0c1fdf0bc2de74d636508388568b0ee6e62ef'
-file = r'‪D:\背景.png'
-getmsg = itchat.get_msg()
-msg = itchat.send_msg(msg=getmsg, toUserName=username)
-imig = itchat.send_image(fileDir=file, toUserName=username)
-print(getmsg)
+file = r'E:\0-Python_PRO/spider_Pic/dongman/海贼王同人之女帝地狱1.jpg'
+# getmsg = itchat.get_msg()
+msg = itchat.send_msg(msg=file, toUserName=username)
+imig = itchat.send_image(fileDir='./loginWX.py ', toUserName=username)
+# print(getmsg)
 
 
 
