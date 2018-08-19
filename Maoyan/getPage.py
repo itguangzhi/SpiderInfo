@@ -39,7 +39,8 @@
 # @Desc  : 获取网页内容
 import datetime
 import re
-from urllib.request import urlopen
+
+from Maoyan.Util import Tools
 
 
 class GetResponse:
@@ -51,8 +52,7 @@ class GetResponse:
     # 在影院筛选也获取影院url信息
     def getcinemaslink(self):
         print('开始获取影院链接信息')
-        response = urlopen(self.cinemas_url).read()
-        pageinfo = str(response, 'utf8').replace('\n', '')
+        pageinfo = Tools.MaoYanurlopen(Tools, self.cinemas_url)
         reg = r'"?offset=(.*?)"'
         cinemaslinklist = Tools.getcinemaslinklist(Tools, pageinfo)
 
@@ -64,8 +64,7 @@ class GetResponse:
             for maxpage in range(1, maxnum):
                 print('正在处理第' + str(maxpage + 1) + '页')
                 nowpageurl = self.cinemas_url + '?offset=%s' % str(int(maxpage) * 12)
-                response = urlopen(nowpageurl).read()
-                pageinfo = str(response, 'utf8').replace('\n', '')
+                pageinfo = Tools.MaoYanurlopen(Tools, nowpageurl)
                 nowcinemaslinklist = Tools.getcinemaslinklist(Tools, pageinfo)
                 for nowcinemaslink in nowcinemaslinklist:
                     cinemaslinklist.append(nowcinemaslink)
@@ -76,20 +75,31 @@ class GetResponse:
 
     # 获取影院排期页面内容及信息
     def getcinemapageinfo(self, link):
-
-        response = urlopen(link).read()
-        pageinfo = str(response, 'utf8').replace('\n', '')
+        pageinfo = Tools.MaoYanurlopen(Tools, link)
         # 拿到影院服务信息
-        serviceinfo = self.getcinemaserviceinfo(self, pageinfo)
+        serviceinfo = self.getcinemaserviceinfo(self, pageinfo, link)
         # 拿到影院排映信息
-
-        showlist = self.getcinemashowindo(self, pageinfo)
-
-
+        showlist = self.getcinemashowinfo(self, pageinfo)
         return serviceinfo, showlist
 
-    # 获取影院服务信息
-    def getcinemaserviceinfo(self, pageinfo):
+    # 获取城市信息信息
+    def getaddressinfo(self):
+        link = 'http://maoyan.com/'
+        pageinfo = Tools.MaoYanurlopen(Tools, link)
+        addrreg = r'<a class="js-city-name" data-ci="(.*?)" data-val="{ choosecityid:.*? }" data-act="cityChange-click">(.*?)</a>'
+        addrs = re.findall(addrreg, pageinfo)
+        addrlist = []
+        for addr in addrs:
+            addrlib = {}
+            addrlist['city_id'] = addr[0]
+            addrlist['city_name'] = addr[1]
+            addrlist.append(addrlib)
+        return addrlist
+
+
+
+    # 获取影院服务信息,传入link只为了获取影院ID
+    def getcinemaserviceinfo(self, pageinfo, link):
         cinemainfo = {}
         cinemaservicereg = r'<div class="cinema-brief-container">(.*?)<div class="cinema-map"'
         cinemaservice = re.findall(cinemaservicereg, pageinfo, re.M)[0]
@@ -116,59 +126,41 @@ class GetResponse:
 
         return cinemainfo
 
-    def getcinemashowindo(self, pageinfo):
+    # 获取影院排期
+    def getcinemashowinfo(self, pageinfo):
         showlist = []
-        showinfo = {}
+        # 限制匹配范围
         showinforeg = r'<div class="container" id="app"(.*?)<div class="big-map-modal"'
         cinemashowinfo = str(re.findall(showinforeg, pageinfo, re.M)[0]).replace(' ', '')
-
-        moviereg = r'data-val="{city_id:.*?,movie_id:(.*?),cinema_id:(.*?)}">'
-        showlistreg = r'<divclass="show-list.*?"data-index="0">(.*?)<divclass="show-list'
-        movielists = re.findall(moviereg, cinemashowinfo, re.S)
-
-        showlists = re.findall(showlistreg, cinemashowinfo, re.M)
-        showinfo['cinema_id '] = movielists[0][1]
-        for item in range(0, len(showlists)):
-            showinfolist = showlists[item]
-
-            showinfo['movie_id '] = movielists[item][0]
-
-        # showinfo['show_id '] = re.findall(showidreg, cinemashowinfo, re.M)
-        #
-        # showinfo['movie_id '] = re.findall(moviereg, cinemashowinfo, re.M)
-        # showinfo['show_date '] = re.findall(, cinemashowinfo, re.M)
-        # showinfo['begin_time '] = re.findall(, cinemashowinfo, re.M)
-        # showinfo['end_time '] = re.findall(, cinemashowinfo, re.M)
-        # showinfo['language '] = re.findall(, cinemashowinfo, re.M)
-        # showinfo['hall '] = re.findall(, cinemashowinfo, re.M)
-        # showinfo['pos '] = re.findall(, cinemashowinfo, re.M)
+        showinfolistsreg = r'<trclass(.*?)</tr>'
+        showinfolist = re.findall(showinfolistsreg, cinemashowinfo)
+        for showinfos in showinfolist:
+            showinfo = {}
+            # print(showinfos)
+            showidreg = r'/xseats/(.*?)\?movieId=(.*?)&cinemaId=(.*?)"'
+            # print(re.findall(showidreg, showinfos))
+            showinfo['show_id '] = re.findall(showidreg, showinfos)[0][0]
+            showinfo['movie_id '] = re.findall(showidreg, showinfos)[0][1]
+            showinfo['cinema_id '] = re.findall(showidreg, showinfos)[0][2]
+            showinfo['show_date '] = str(showinfo['show_id '])[:4] + '-' + str(showinfo['show_id '])[4:6] + '-' + str(
+                showinfo['show_id '])[6:8]
+            schedulreg = r'"begin-time">(.*?)</span><br/><spanclass="end-time">(.*?)散场</span></td><td><spanclass="lang">(.*?)</span></td><td><spanclass="hall">(.*?)</span>'
+            # print(re.findall(schedulreg, showinfos))
+            showinfo['begin_time '] = re.findall(schedulreg, showinfos)[0][0]
+            showinfo['end_time '] = re.findall(schedulreg, showinfos)[0][1]
+            showinfo['language '] = re.findall(schedulreg, showinfos)[0][2]
+            showinfo['hall '] = re.findall(schedulreg, showinfos)[0][3]
+            showinfo['pos '] = '-'
             showinfo['creation_date'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             showinfo['last_update_time '] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            showlist.append(showinfo)
 
+            showlist.append(showinfo)
         return showlist
 
 
-class Tools:
-    menu_url = GetResponse.menu_url
-
-    def getcinemaslinklist(self, pageinfo):
-        cinemalinklist = []
-        cinemareg = r'class="cinema-name" .*?data-val="{city_id: .*?, cinema_id: (.*?)}">(.*?)</a>'
-        cinemasinfo = re.findall(cinemareg, pageinfo)
-        for c in cinemasinfo:
-            # cinema = {}
-            # # 影院id
-            # cinema['cinema_id'] = c[0]
-            # # 影院名称
-            # cinema['cinema_name'] = c[1]
-            # 影院link
-            cinemalink = self.menu_url + '/cinema/' + str(c[0])
-            cinemalinklist.append(cinemalink)
-
-        return cinemalinklist
-
-
-link = 'http://maoyan.com/cinema/5278'
-for i in GetResponse.getcinemapageinfo(GetResponse, link):
-    print(i)
+if __name__ == '__main__':
+    cinemalinklist = GetResponse.getcinemaslink(GetResponse)
+    addrinfo = GetResponse.getaddressinfo(GetResponse)
+    for cinemalink in cinemalinklist:
+        cinemainfo = GetResponse.getcinemapageinfo(GetResponse, cinemalink)[0]
+        cinemashow = GetResponse.getcinemapageinfo(GetResponse, cinemalink)[1]
