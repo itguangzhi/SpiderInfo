@@ -42,7 +42,7 @@ import re
 from urllib.request import urlopen
 
 
-class comingReginLists():
+class comingReginList():
     # 数据来源时光网首页的即将上映的信息
     def getupcomingRegionList(self,url):
         
@@ -73,5 +73,3 @@ class comingReginLists():
             pagelist.extend(mid)
             # movieID = eval(mid)
         return set(pagelist)
-
-

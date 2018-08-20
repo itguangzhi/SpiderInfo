@@ -43,46 +43,24 @@ from Mtime.V2.getinfo import tomovieinfo
 from Mtime.V2.builder import KVbuildSQL
 from Mtime.V2.connectionDB import SaveData
 from Mtime.V2.selector import selectID
-from Mtime.V2.future import comingReginList
-
-# 获取 即将上映 影片信息并存储到数据库中
-def getComingReleaseMovie(db='mysql'):
-    movielist = comingReginList.comingReginLists.gettfulturemovieUrl(comingReginList.comingReginLists)
-    for movieid in movielist:
-        pageinfomation = tomovieinfo(movieid)
-        # print(pageinfomation)
-        if db == 'mysql' or db == 'MYSQL' or db == 'Mysql' :
-            replaceToMysql(pageinfomation)
-            print('save mysql '+movieid+' is well done ')
-        elif db == 'sqlserver' or db == 'SQLSERVER' or db == 'SQLServer':
-            mergeToSqlserver(pageinfomation)
-            print('save sqlserver ' + movieid + ' is faild ')
-        elif db == 'ALL' or db == 'all' or db == 'All':
-            replaceToMysql(pageinfomation)
-            print('save mysql ' + movieid + ' is well done ')
-            mergeToSqlserver(pageinfomation)
-            print('save sqlserver ' + movieid + ' is faild ')
-        else:
-            print('你想干啥，存那啊')
-
-# 获取 正在上映 影片信息并存储到数据库中
-def gethotplayMovie():
-    movielist = ''
 
 
 # 爬虫结果放到MySQL中（要把大象放冰箱，总共分几步？）
-def replaceToMysql(pageinfomation):
-    # print(pageinfomation)
-    saveinfomation = KVbuildSQL.mysqlbuild(KVbuildSQL, pageinfomation)
-    # print(saveinfomation)
-    SaveData.savemysql(SaveData, saveinfomation)
+def replaceToMysql(x):
+    pageinfomation = tomovieinfo(x)
+    print(pageinfomation)
+    saveinfomation = KVbuildSQL.mysqlbuild(pageinfomation[0], str(pageinfomation[1]).replace('[', '').replace(']', ''))
+    print(saveinfomation)
+    SaveData.savemysql(saveinfomation)
 
-# 爬虫结果放到Sqlserver中（要把大象放冰箱，总共分几步？）
+
 def mergeToSqlserver(x):
     ''
 
+
 def updateToSqlserver(x):
     ''
+
 
 # 更新数据库中上映状态为1的影片
 def updateReleaseType(type=1):
@@ -160,4 +138,4 @@ def updateReleaseType(type=1):
 #         print('Input Coding Error , Please Try Again .')
 #         pass
 
-getComingReleaseMovie()
+updateReleaseType(0)
