@@ -39,8 +39,10 @@
 # @Desc  : 获取网页内容
 import datetime
 import re
+from threading import Thread
+from urllib.request import urlopen
+# from Maoyan.Util import Tools
 
-from Maoyan.Util import Tools
 
 
 class GetResponse:
@@ -84,7 +86,7 @@ class GetResponse:
 
     # 获取城市信息信息
     def getaddressinfo(self):
-        link = 'http://maoyan.com/'
+        link = 'http://maoyan.com/cinema/7524'
         pageinfo = Tools.MaoYanurlopen(Tools, link)
         addrreg = r'<a class="js-city-name" data-ci="(.*?)" data-val="{ choosecityid:.*? }" data-act="cityChange-click">(.*?)</a>'
         addrs = re.findall(addrreg, pageinfo)
@@ -95,7 +97,6 @@ class GetResponse:
             addrlist['city_name'] = addr[1]
             addrlist.append(addrlib)
         return addrlist
-
 
 
     # 获取影院服务信息,传入link只为了获取影院ID
@@ -114,13 +115,25 @@ class GetResponse:
         cinemainfo['cinema_name'] = re.findall(cinemanamereg, cinemaservice)[0]
         cinemainfo['cinema_address '] = re.findall(cinemaaddrreg, cinemaservice)[0]
         cinemainfo['cinema_tel '] = re.findall(cinematelreg, cinemaservice)[0]
-        cinemainfo['cinema_service_3Dglasses_info'] = re.findall(cinema3Dglassreg, cinemaservice)[0]
-        cinemainfo['cinema_service_3Dglasses_by'] = re.findall(cinema3Dglasstagreg, cinemaservice)[0]
-        cinemainfo['cinema_service_child '] = re.findall(cinemachildreg, cinemaservice)[1]
+        try:
+            cinemainfo['cinema_service_3Dglasses_info'] = re.findall(cinema3Dglassreg, cinemaservice)[0]
+        except:
+            cinemainfo['cinema_service_3Dglasses_info'] = '-'
+        try:
+            cinemainfo['cinema_service_3Dglasses_by'] = re.findall(cinema3Dglasstagreg, cinemaservice)[0]
+        except:
+            cinemainfo['cinema_service_3Dglasses_by'] = '-'
+
+        try:
+            cinemainfo['cinema_service_child '] = re.findall(cinemachildreg, cinemaservice)[1]
+        except:
+            cinemainfo['cinema_service_child '] = '-'
+
         try:
             cinemainfo['cinema_service_park'] = re.findall(cinemaparkreg, cinemaservice)[0]
         except:
             cinemainfo['cinema_service_park'] = '-'
+
         cinemainfo['creation_date'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         cinemainfo['last_update_time '] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
@@ -158,9 +171,74 @@ class GetResponse:
         return showlist
 
 
+class Tools:
+    menu_url = GetResponse.menu_url
+
+    def getcinemaslinklist(self, pageinfo):
+        cinemalinklist = []
+        cinemareg = r'class="cinema-name" .*?data-val="{city_id: .*?, cinema_id: (.*?)}">(.*?)</a>'
+        cinemasinfo = re.findall(cinemareg, pageinfo)
+        for c in cinemasinfo:
+            # cinema = {}
+            # # 影院id
+            # cinema['cinema_id'] = c[0]
+            # # 影院名称
+            # cinema['cinema_name'] = c[1]
+            # 影院link
+            cinemalink = self.menu_url + '/cinema/' + str(c[0])
+            cinemalinklist.append(cinemalink)
+
+        return cinemalinklist
+
+    def MaoYanurlopen(self, link):
+        response = urlopen(link).read()
+        pageinfo = str(response, 'utf8').replace('\n', '')
+        return pageinfo
+
+        # 构建存储到mysql的入库语句
+    def mysqlbuild(self, tbl, tablename:str):
+            field = ''
+            values = ''
+            for f in tbl:
+                field = field + ',' + f
+                values = values + ',' + "'" + tbl[f] + "'"
+            fields = list(field)
+
+            fields[0] = ''
+            field = ''.join(fields)
+
+            value = list(values)
+
+            value[0] = ''
+            values = ''.join(value)
+
+            Tbname = tablename
+            sql = "replace into %s (%s)VALUES(%s);" % (Tbname, field, values)
+            return sql
+
+    def async(f):
+        def wrapper(*args, **kwargs):
+            thr = Thread(target=f, args=args, kwargs=kwargs)
+            thr.start()
+
+        return wrapper
+
+
 if __name__ == '__main__':
     cinemalinklist = GetResponse.getcinemaslink(GetResponse)
+    print(cinemalinklist)
     addrinfo = GetResponse.getaddressinfo(GetResponse)
+    print(addrinfo)
     for cinemalink in cinemalinklist:
         cinemainfo = GetResponse.getcinemapageinfo(GetResponse, cinemalink)[0]
-        cinemashow = GetResponse.getcinemapageinfo(GetResponse, cinemalink)[1]
+        cinemainfoSQL = Tools.mysqlbuild(Tools,cinemainfo,'maoyan_cinema_info')
+        with open('./data.txt','a+', encoding='utf-8') as f:
+            f.writelines(str(cinemainfoSQL)+'\n')
+
+        cinemashowes = GetResponse.getcinemapageinfo(GetResponse, cinemalink)[1]
+        for cinemashow in cinemashowes:
+            cinemashowSQL = Tools.mysqlbuild(Tools, cinemashow, 'maoyan_show_info')
+            with open('./data.txt', 'a+',encoding='utf-8') as f:
+                f.writelines(str(cinemashowSQL)+'\n')
+
+    f.close()
