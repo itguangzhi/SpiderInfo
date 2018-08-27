@@ -37,4 +37,26 @@
 # @ContactEmail : huguangzhi@ucsdigital.com.com 
 # @ContactPhone : 13121961510 
 # @Date  : 2018-08-27 - 14:34
-# @Desc  :
+# @Desc  : 腾讯云短信接口SDK
+
+from qcloudsms_py import SmsSingleSender
+from qcloudsms_py.httpclient import HTTPError
+
+appid = '1400120315'
+appkey = ''
+template_id = 171118
+phone_numbers = ['15831833670']
+sms_sign = 'Tremble'
+# 当模板没有参数时，`params = []`，数组具体的元素个数和模板中变量个数必须一致，例如事例中templateId:5678对应一个变量，参数数组中元素个数也必须是一个
+params = ["liyang"]  # 个人用户限制长度为12个字符
+
+ssender = SmsSingleSender(appid, appkey)
+try:
+    result = ssender.send_with_param(86, phone_numbers[0],
+                                     template_id, params, sign=sms_sign, extend="", ext="")  # 签名参数未提供或者为空时，会使用默认签名发送短信
+except HTTPError as e:
+    print(e)
+except Exception as e:
+    print(e)
+
+print(result)
