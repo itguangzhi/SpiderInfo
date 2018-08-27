@@ -336,7 +336,7 @@ class Tools:
         return useragent
 
 
-class information:
+class Information:
     city_info = ['150:150:阿拉善盟', '151:151:鞍山', '197:197:安庆', '238:238:安阳', '319:319:阿坝', '324:324:安顺', '359:359:安康',
                  '400:400:阿勒泰', '394:394:阿克苏', '490:490:安吉', '588:588:安丘', '699:699:安岳', '807:807:安平', '873:873:安宁',
                  '844:844:安溪', '1008:1008:安化', '1126:1126:阿勒泰市', '1068:1068:安福', '1:1:北京', '84:84:保定', '88:88:蚌埠',
@@ -508,6 +508,40 @@ class information:
         return dicts
 
 
+class DataSave:
+
+    def connectionDB(self):
+        import pymysql
+        conn = pymysql.connect(
+            host='',
+            port=3306,
+            username='',
+            passwd='',
+            charset='utf8',
+            db=''
+        )
+        return conn
+
+    def execSQL(self, sql):
+        conn = DataSave.connectionDB(DataSave)
+        cur = conn.cursor()
+        cur.execute(sql)
+        res = cur.fetchall()
+        return res
+
+    @Tools.async
+    def savechannel(self, execlist: list):
+        if len(execlist) == 0:
+            print('当前没有数据要执行')
+        else:
+            for execinfo in execlist:
+                try:
+                    DataSave.execSQL(DataSave, execinfo)
+                    execlist.remove(execinfo)
+                except:
+                    print('[ Error ]' + str(execinfo) + '执行失败')
+
+
 
 
 if __name__ == '__main__':
@@ -516,7 +550,7 @@ if __name__ == '__main__':
     addrinfo = GetResponse.getaddressinfo(GetResponse)
     print(addrinfo)
 
-    city = information.listTOdict(information, information.city_info)
+    city = Information.listTOdict(Information, Information.city_info)
     citysql = Tools.mysqlAllbuild(Tools, city, 'maoyan_city_info')
     print(citysql)
 
