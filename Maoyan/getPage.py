@@ -116,7 +116,6 @@ class GetResponse:
             addrlist.append(addrlib)
         return addrlist
 
-
     # 获取影院服务信息,传入link只为了获取影院ID
     def getcinemaserviceinfo(self, pageinfo, link):
         cinemainfo = {}
@@ -192,6 +191,7 @@ class GetResponse:
 class Tools:
     menu_url = GetResponse.menu_url
 
+    # 获取影院地址链接
     def getcinemaslinklist(self, pageinfo):
         cinemalinklist = []
         cinemareg = r'class="cinema-name" .*?data-val="{city_id: .*?, cinema_id: (.*?)}">(.*?)</a>'
@@ -218,6 +218,7 @@ class Tools:
         return pageinfo
 
         # 构建存储到mysql的入库语句
+
     def mysqlbuild(self, tbl, tablename:str):
             field = ''
             values = ''
@@ -265,9 +266,6 @@ class Tools:
         Tbname = tablename
         sql = "replace into %s (%s)VALUES %s;" % (Tbname, field, values)
         return sql
-
-
-
 
     def async(f):
         def wrapper(*args, **kwargs):
