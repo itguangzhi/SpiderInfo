@@ -48,7 +48,6 @@ from urllib.request import urlopen
 # from Maoyan.Util import Tools
 
 
-
 class GetResponse:
     menu_url = r'http://maoyan.com'
     cinemas_url = r'http://maoyan.com/cinemas'
@@ -219,25 +218,25 @@ class Tools:
 
         # 构建存储到mysql的入库语句
 
-    def mysqlbuild(self, tbl, tablename:str):
-            field = ''
-            values = ''
-            for f in tbl:
-                field = field + ',' + f
-                values = values + ',' + "'" + tbl[f] + "'"
-            fields = list(field)
+    def mysqlbuild(self, tbl, tablename: str):
+        field = ''
+        values = ''
+        for f in tbl:
+            field = field + ',' + f
+            values = values + ',' + "'" + tbl[f] + "'"
+        fields = list(field)
 
-            fields[0] = ''
-            field = ''.join(fields)
+        fields[0] = ''
+        field = ''.join(fields)
 
-            value = list(values)
+        value = list(values)
 
-            value[0] = ''
-            values = ''.join(value)
+        value[0] = ''
+        values = ''.join(value)
 
-            Tbname = tablename
-            sql = "replace into %s (%s)VALUES(%s);" % (Tbname, field, values)
-            return sql
+        Tbname = tablename
+        sql = "replace into %s (%s)VALUES(%s);" % (Tbname, field, values)
+        return sql
 
     def mysqlAllbuild(self, tbl, tablename: str):
         field = ''
@@ -504,6 +503,7 @@ class Information:
             cityinfolist = str(i).split(':')
             cityinfo['city_id'] = cityinfolist[0]
             cityinfo['city_name'] = cityinfolist[-1]
+            cityinfo['last_update_time'] = str(datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S'))
             dicts.append(cityinfo)
         return dicts
 
@@ -513,20 +513,24 @@ class DataSave:
     def connectionDB(self):
         import pymysql
         conn = pymysql.connect(
-            host='',
+            host='192。168.30.111',
             port=3306,
-            username='',
-            passwd='',
+            user='root',
+            passwd='123456',
             charset='utf8',
-            db=''
+            database='spiderInc'
         )
         return conn
 
+    @Tools.async
     def execSQL(self, sql):
         conn = DataSave.connectionDB(DataSave)
         cur = conn.cursor()
         cur.execute(sql)
         res = cur.fetchall()
+        cur.close()
+        conn.commit()
+        conn.close()
         return res
 
     @Tools.async
@@ -542,17 +546,18 @@ class DataSave:
                     print('[ Error ]' + str(execinfo) + '执行失败')
 
 
-
-
 if __name__ == '__main__':
-    filepath = './cinemainfo-%s' % str(datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S'))
-    filepath2 = './MaoYanPlatforms-%s' % str(datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S'))
-    addrinfo = GetResponse.getaddressinfo(GetResponse)
-    print(addrinfo)
+    nowdatetime = str(datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S'))
+    print('爬虫开始%s' % nowdatetime)
+    filepath = './cinemainfo-%s.txt' % str(datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S'))
+    filepath2 = './platforms-%s.txt' % str(datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S'))
+    # addrinfo = GetResponse.getaddressinfo(GetResponse)
+    # print(addrinfo)
 
     city = Information.listTOdict(Information, Information.city_info)
     citysql = Tools.mysqlAllbuild(Tools, city, 'maoyan_city_info')
-    print(citysql)
+    # print(citysql)
+    DataSave.execSQL(DataSave, citysql)
 
     cinemalinklist = GetResponse.getcinemaslink(GetResponse)
     # print(cinemalinklist)
@@ -560,26 +565,32 @@ if __name__ == '__main__':
     for cinemalink in cinemalinklist:
         cinemainfo = GetResponse.getcinemapageinfo(GetResponse, cinemalink)[0]
         print('正在获取 %s 影院的数据' % str(cinemainfo['cinema_name']))
-        cinemainfoSQL = Tools.mysqlbuild(Tools,cinemainfo,'maoyan_cinema_info')
-        with open(filepath, 'a+', encoding='utf-8') as f:
-            f.writelines(str(cinemainfoSQL)+'\n')
+        cinemainfoSQL = Tools.mysqlbuild(Tools, cinemainfo, 'maoyan_cinema_info')
+
+        DataSave.execSQL(DataSave, cinemainfoSQL)
+        # with open(filepath, 'a+', encoding='utf-8') as f:
+        #     f.writelines(str(cinemainfoSQL) + '\n')
 
         cinemashowes = GetResponse.getcinemapageinfo(GetResponse, cinemalink)[1]
 
         try:
-            sqls = Tools.mysqlAllbuild(Tools, cinemashowes, 'maoyan_show_info')
+            showSQL = Tools.mysqlAllbuild(Tools, cinemashowes, 'maoyan_show_info')
         except:
             print('构建sql失败，源数据为：')
             print(cinemashowes)
             print('影院地址为：%s' % str(cinemalink))
-            sqls = None
-        with open(filepath2, 'a+', encoding='utf-8') as f1:
-            f1.writelines(str(sqls) + '\n')
+            continue
+
+        DataSave.execSQL(DataSave, showSQL)
+        # with open(filepath2, 'a+', encoding='utf-8') as f1:
+        #     f1.writelines(str(sqls) + '\n')
         # 按行生成sql
         # for cinemashow in cinemashowes:
         #     cinemashowSQL = Tools.mysqlbuild(Tools, cinemashow, 'maoyan_show_info')
         #     with open(filepath, 'a+',encoding='utf-8') as f:
         #         f.writelines(str(cinemashowSQL)+'\n')
 
-    f.close()
-    f1.close()
+    # f.close()
+    # f1.close()
+    enddatetime = str(datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S'))
+    print('爬虫结束%s' % enddatetime)
