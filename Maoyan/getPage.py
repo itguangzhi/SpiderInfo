@@ -171,6 +171,7 @@ class GetResponse:
             showinfo['show_id '] = re.findall(showidreg, showinfos)[0][0]
             showinfo['movie_id '] = re.findall(showidreg, showinfos)[0][1]
             showinfo['cinema_id '] = re.findall(showidreg, showinfos)[0][2]
+            showinfo['cinema_name'] = cinemainfo['cinema_name']
             showinfo['show_date '] = str(showinfo['show_id '])[:4] + '-' + str(showinfo['show_id '])[4:6] + '-' + str(
                 showinfo['show_id '])[6:8]
             schedulreg = r'"begin-time">(.*?)</span><br/><spanclass="end-time">(.*?)散场</span></td><td><spanclass="lang">(.*?)</span></td><td><spanclass="hall">(.*?)</span>'
@@ -533,6 +534,16 @@ class DataSave:
         conn.close()
         return res
 
+    def unexecSQL(self, sql):
+        conn = DataSave.connectionDB(DataSave)
+        cur = conn.cursor()
+        cur.execute(sql)
+        res = cur.fetchall()
+        cur.close()
+        conn.commit()
+        conn.close()
+        return res
+
     @Tools.async
     def savechannel(self, execlist: list):
         if len(execlist) == 0:
@@ -545,6 +556,46 @@ class DataSave:
                 except:
                     print('[ Error ]' + str(execinfo) + '执行失败')
 
+
+class SpiderMovieInfo:
+    menuURL = ''
+
+    def getResponse(self, movieID: str):
+        url = 'https://piaofang.maoyan.com/movie/%s' % movieID
+        HTMLpage = urlopen(url)
+        page = HTMLpage.read().decode('utf-8')
+        return page
+
+    def gethref(self, pageinfo, movieID):
+        href = re.findall('href="/movie/%s/(.*?)"' % movieID, pageinfo)
+        return href
+
+    def getinfo(self, page, movieID: str):
+        pageinfo = {}
+
+        pageinfo['movie_id'] = movieID
+        movieREG = '<span class="info-title-content">(.*?)</span>'
+        pageinfo['movie_name'] = re.findall(movieREG, page)[0].replace('&quot;', '"')
+
+        emovieREG = '<span class="info-etitle-content">(.*?)</span>'
+        try:
+            pageinfo['movie_name_other'] = re.findall(emovieREG, page)[0].replace('&quot;', '"')
+        except:
+            pageinfo['movie_name_other'] = '-'
+
+        return pageinfo
+
+    def getresource(self, maoyanmovieID: list):
+        infomation = []
+        for id in maoyanmovieID:
+            movieID = str(id)
+            page = self.getResponse(SpiderMovieInfo, movieID)
+            # href = SpiderMovieInfo.gethref(SpiderMovieInfo, page, movieID)
+            info = self.getinfo(self, page, movieID)
+            print(info)
+            infomation.append(info)
+
+        return infomation
 
 if __name__ == '__main__':
     nowdatetime = str(datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S'))
@@ -589,6 +640,21 @@ if __name__ == '__main__':
         #     cinemashowSQL = Tools.mysqlbuild(Tools, cinemashow, 'maoyan_show_info')
         #     with open(filepath, 'a+',encoding='utf-8') as f:
         #         f.writelines(str(cinemashowSQL)+'\n')
+
+    movieidSQL = 'SELECT DISTINCT(movie_id) FROM maoyan_show_info ORDER BY movie_id;'
+    SQLRES = DataSave.unexecSQL(DataSave, movieidSQL)
+    print('共计有%d部电影数据需要更新' % len(SQLRES))
+    res = str(SQLRES).replace(',', '').replace('((', '').replace('))', '').replace(' ', '').split(')(')
+    # res = str(SQLRES).replace(' ','').replace('(', '').replace(')', '').replace(',,', ',').split(',')
+
+    movieinfomation = SpiderMovieInfo.getresource(SpiderMovieInfo, res)
+    movieSQL = Tools.mysqlAllbuild(Tools, movieinfomation, 'maoyan_movie_info')
+    DataSave.execSQL(DataSave, movieSQL)
+
+
+
+
+
 
     # f.close()
     # f1.close()

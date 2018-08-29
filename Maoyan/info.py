@@ -40,7 +40,8 @@
 # @ContactPhone : 13121961510 
 # @Date  : 2018-08-21 - 16:08
 # @Desc  :
-
+import re
+from urllib.request import urlopen
 class information:
     city_info = ['150:150:阿拉善盟', '151:151:鞍山', '197:197:安庆', '238:238:安阳', '319:319:阿坝', '324:324:安顺', '359:359:安康',
                  '400:400:阿勒泰', '394:394:阿克苏', '490:490:安吉', '588:588:安丘', '699:699:安岳', '807:807:安平', '873:873:安宁',
@@ -213,4 +214,30 @@ class information:
         return dicts
 
 
-print(information.listTOdict(information, information.city_info))
+class SpiderMovieInfo:
+    menuURL = ''
+
+    def getResponse(self, movieID: str):
+        url = 'https://piaofang.maoyan.com/movie/%s' % movieID
+        HTMLpage = urlopen(url)
+        page = HTMLpage.read().decode('utf-8')
+        return page
+
+    def gethref(self, pageinfo, movieID):
+        href = re.findall('href="/movie/%s/(.*?)"' % movieID, pageinfo)
+        return href
+
+    def getinfo(self, page, movieID):
+        pageinfo = {}
+
+        pageinfo['movie_name'] = movieID
+        movieREG = '<span class="info-title-content">(.*?)</span>'
+        pageinfo['movie_name'] = re.findall(movieREG, page)
+
+        emovieREG = '<span class="info-etitle-content">(.*?)</span>'
+        pageinfo['movie_name_other'] = re.findall(movieREG, page)
+
+
+if __name__ == '__main__':
+    page = SpiderMovieInfo.getResponse(SpiderMovieInfo, '343208')
+    href = SpiderMovieInfo.gethref(SpiderMovieInfo, page, '343208')
