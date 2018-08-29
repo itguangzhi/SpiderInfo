@@ -32,40 +32,64 @@
                   别人笑我忒疯癫，我笑自己命太贱；  
                   不见满街漂亮妹，哪个归得程序员？ 
 '''
-# @File  : EmailMSG.py
+# @File  : xunfei.py
 # @Author: huguangzhi
+# @Drivce: Thinkpad E470
 # @ContactEmail : huguangzhi@ucsdigital.com.com 
 # @ContactPhone : 13121961510 
-# @Date  : 2018-08-27 - 14:35
+# @Date  : 2018-08-29 - 11:02
 # @Desc  :
-import smtplib
-from email.mime.text import MIMEText
-from email.utils import formataddr
 
-my_sender = '429240967@qq.com'  # 发件人邮箱账号
-my_pass = 'xxxxxxxxxx'  # 发件人邮箱密码
-my_user = '429240967@qq.com'  # 收件人邮箱账号，我这边发送给自己
+import base64
+import hashlib
+import time
 
+# -*- coding: utf-8 -*-
+import requests
 
-def mail():
-    ret = True
-    try:
-        msg = MIMEText('填写邮件内容', 'plain', 'utf-8')
-        msg['From'] = formataddr(["FromRunoob", my_sender])  # 括号里的对应发件人邮箱昵称、发件人邮箱账号
-        msg['To'] = formataddr(["FK", my_user])  # 括号里的对应收件人邮箱昵称、收件人邮箱账号
-        msg['Subject'] = "菜鸟教程发送邮件测试"  # 邮件的主题，也可以说是标题
-
-        server = smtplib.SMTP_SSL("smtp.qq.com", 465)  # 发件人邮箱中的SMTP服务器，端口是25
-        server.login(my_sender, my_pass)  # 括号中对应的是发件人邮箱账号、邮箱密码
-        server.sendmail(my_sender, [my_user, ], msg.as_string())  # 括号中对应的是发件人邮箱账号、收件人邮箱账号、发送邮件
-        server.quit()  # 关闭连接
-    except Exception:  # 如果 try 中的语句没有执行，则会执行下面的 ret=False
-        ret = False
-    return ret
+URL = "http://api.xfyun.cn/v1/service/v1/tts"
+AUE = "raw"
+APPID = ""
+API_KEY = ""
 
 
-ret = mail()
-if ret:
-    print("邮件发送成功")
+def getHeader():
+    curTime = str(int(time.time()))
+    param = "{\"aue\":\"" + AUE + "\",\"auf\":\"audio/L16;rate=16000\",\"voice_name\":\"xiaoyan\",\"engine_type\":\"intp65\"}"
+    paramBase64 = base64.b64encode(param)
+    m2 = hashlib.md5()
+    m2.update(API_KEY + curTime + paramBase64)
+    checkSum = m2.hexdigest()
+    header = {
+        'X-CurTime': curTime,
+        'X-Param': paramBase64,
+        'X-Appid': APPID,
+        'X-CheckSum': checkSum,
+        'X-Real-Ip': '127.0.0.1',
+        'Content-Type': 'application/x-www-form-urlencoded; charset=utf-8',
+    }
+    return header
+
+
+def getBody(text):
+    data = {'text': text}
+    return data
+
+
+def writeFile(file, content):
+    with open(file, 'wb') as f:
+        f.write(content)
+    f.close()
+
+
+r = requests.post(URL, headers=getHeader(), data=getBody("科大讯飞是中国最大的智能语音技术提供商"))
+contentType = r.headers['Content-Type']
+if contentType == "audio/mpeg":
+    sid = r.headers['sid']
+    if AUE == "raw":
+        writeFile("audio/" + sid + ".wav", r.content)
+    else:
+        writeFile("audio/" + sid + ".mp3", r.content)
+    print("success, sid = " + sid)
 else:
-    print("邮件发送失败")
+    print(r.text)
