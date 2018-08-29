@@ -43,7 +43,7 @@ from qcloudsms_py import SmsSingleSender
 from qcloudsms_py.httpclient import HTTPError
 
 appid = '1400120315'
-appkey = '6926ab49d327786d026563a655397991'
+appkey = ''
 template_id = 171118
 phone_numbers = ['15831833670', '13131219413']
 sms_sign = 'Tremble'
