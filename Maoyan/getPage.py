@@ -171,7 +171,7 @@ class GetResponse:
             showinfo['show_id '] = re.findall(showidreg, showinfos)[0][0]
             showinfo['movie_id '] = re.findall(showidreg, showinfos)[0][1]
             showinfo['cinema_id '] = re.findall(showidreg, showinfos)[0][2]
-            showinfo['cinema_name'] = cinemainfo['cinema_name']
+            showinfo['cinema_name'] = self.getcinemaserviceinfo(self, pageinfo, '/./')['cinema_name']
             showinfo['show_date '] = str(showinfo['show_id '])[:4] + '-' + str(showinfo['show_id '])[4:6] + '-' + str(
                 showinfo['show_id '])[6:8]
             schedulreg = r'"begin-time">(.*?)</span><br/><spanclass="end-time">(.*?)散场</span></td><td><spanclass="lang">(.*?)</span></td><td><spanclass="hall">(.*?)</span>'
@@ -181,7 +181,7 @@ class GetResponse:
             showinfo['language '] = re.findall(schedulreg, showinfos)[0][2]
             showinfo['hall '] = re.findall(schedulreg, showinfos)[0][3]
             showinfo['pos '] = '-'
-            showinfo['creation_date'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            # showinfo['creation_date'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             showinfo['last_update_time '] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
             showlist.append(showinfo)
@@ -576,6 +576,7 @@ class SpiderMovieInfo:
         pageinfo['movie_id'] = movieID
         movieREG = '<span class="info-title-content">(.*?)</span>'
         pageinfo['movie_name'] = re.findall(movieREG, page)[0].replace('&quot;', '"')
+        pageinfo['last_update_time'] = str(datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S'))
 
         emovieREG = '<span class="info-etitle-content">(.*?)</span>'
         try:
@@ -585,14 +586,14 @@ class SpiderMovieInfo:
 
         return pageinfo
 
-    def getresource(self, maoyanmovieID: list):
+    def getmovieresource(self, maoyanmovieID: list):
         infomation = []
         for id in maoyanmovieID:
             movieID = str(id)
             page = self.getResponse(SpiderMovieInfo, movieID)
             # href = SpiderMovieInfo.gethref(SpiderMovieInfo, page, movieID)
             info = self.getinfo(self, page, movieID)
-            print(info)
+            print('%s 影片数据已经获取 ' % info['movie_name'])
             infomation.append(info)
 
         return infomation
@@ -627,8 +628,7 @@ if __name__ == '__main__':
         try:
             showSQL = Tools.mysqlAllbuild(Tools, cinemashowes, 'maoyan_show_info')
         except:
-            print('构建sql失败，源数据为：')
-            print(cinemashowes)
+            print('构建sql失败，源数据为：%s' % str(cinemashowes))
             print('影院地址为：%s' % str(cinemalink))
             continue
 
@@ -647,7 +647,7 @@ if __name__ == '__main__':
     res = str(SQLRES).replace(',', '').replace('((', '').replace('))', '').replace(' ', '').split(')(')
     # res = str(SQLRES).replace(' ','').replace('(', '').replace(')', '').replace(',,', ',').split(',')
 
-    movieinfomation = SpiderMovieInfo.getresource(SpiderMovieInfo, res)
+    movieinfomation = SpiderMovieInfo.getmovieresource(SpiderMovieInfo, res)
     movieSQL = Tools.mysqlAllbuild(Tools, movieinfomation, 'maoyan_movie_info')
     DataSave.execSQL(DataSave, movieSQL)
 
