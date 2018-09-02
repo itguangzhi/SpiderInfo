@@ -335,7 +335,7 @@ class Tools:
         useragent = random.choice(ua)
         return useragent
 
-
+# 信息类
 class Information:
     city_info = ['150:150:阿拉善盟', '151:151:鞍山', '197:197:安庆', '238:238:安阳', '319:319:阿坝', '324:324:安顺', '359:359:安康',
                  '400:400:阿勒泰', '394:394:阿克苏', '490:490:安吉', '588:588:安丘', '699:699:安岳', '807:807:安平', '873:873:安宁',
@@ -497,6 +497,7 @@ class Information:
                  '858:858:柘城', '834:834:邹城', '841:841:赵县', '1007:1007:织金', '997:997:芷江', '985:985:周至', '1093:1093:资兴市',
                  '1140:1140:扎兰屯市', '1048:1048:漳平', '1179:1179:忠县', '1196:1196:柘荣', '1200:1200:中江县']
 
+    # 城市信息列表转换为字典
     def listTOdict(self, listinfo):
         dicts = []
         for i in listinfo:
@@ -510,19 +511,19 @@ class Information:
 
 
 class DataSave:
-
+    # 数据库连接
     def connectionDB(self):
         import pymysql
         conn = pymysql.connect(
-            host='192。168.30.111',
+            host='192.168.79.1',
             port=3306,
             user='root',
-            passwd='123456',
+            passwd='huguangzhi',
             charset='utf8',
-            database='spiderInc'
+            database='spiderinc'
         )
         return conn
-
+    # 异步执行sql
     @Tools.async
     def execSQL(self, sql):
         conn = DataSave.connectionDB(DataSave)
@@ -533,7 +534,7 @@ class DataSave:
         conn.commit()
         conn.close()
         return res
-
+    # 同步执行sql
     def unexecSQL(self, sql):
         conn = DataSave.connectionDB(DataSave)
         cur = conn.cursor()
@@ -544,6 +545,7 @@ class DataSave:
         conn.close()
         return res
 
+    # 异步执行动态管道方法
     @Tools.async
     def savechannel(self, execlist: list):
         if len(execlist) == 0:
@@ -556,20 +558,19 @@ class DataSave:
                 except:
                     print('[ Error ]' + str(execinfo) + '执行失败')
 
-
+# 爬虫信息类
 class SpiderMovieInfo:
-    menuURL = ''
-
+    # 请求页面
     def getResponse(self, movieID: str):
         url = 'https://piaofang.maoyan.com/movie/%s' % movieID
         HTMLpage = urlopen(url)
         page = HTMLpage.read().decode('utf-8')
         return page
-
+    # 获取影院放映场次排次号
     def gethref(self, pageinfo, movieID):
         href = re.findall('href="/movie/%s/(.*?)"' % movieID, pageinfo)
         return href
-
+    # 获取影片页信息方法
     def getinfo(self, page, movieID: str):
         pageinfo = {}
 
@@ -585,7 +586,7 @@ class SpiderMovieInfo:
             pageinfo['movie_name_other'] = '-'
 
         return pageinfo
-
+    # 影片信息获取迭代器
     def getmovieresource(self, maoyanmovieID: list):
         infomation = []
         for id in maoyanmovieID:
