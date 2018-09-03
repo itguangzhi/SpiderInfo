@@ -51,12 +51,12 @@ broswer.get(maoyan)
 
 def city_data(sqls):
     conn = pymysql.connect(
-        host='192.168.79.1',
+        host='192.168.30.111',
         port=3306,
         user='root',
-        passwd='huguangzhi',
+        passwd='123456',
         charset='utf8',
-        database='spiderinc'
+        database='spiderInc'
     )
     cur = conn.cursor()
     cur.execute(sqls)
@@ -80,7 +80,7 @@ def builder(cityid, linklist):
     # print(values)
 
     val = str(values)[1:-1].replace('[', '(').replace(']', ')')
-    SQL = 'replace into maoyan_cinema_info (cinema_id,city_id,cinema_link)values %s' % val
+    SQL = 'replace into maoyan_cinema_link (cinema_id,city_id,cinema_link)values %s' % val
     updateSQL = ''
     print(SQL)
 
@@ -98,34 +98,42 @@ def getallcitycinemainfo():
         citypath = getcityxpath(city_id)
         # print(citypath)
 
-        cinemalinklist = []
-        while True:
-            for sel in range(1, 13):
-                try:
-                    cinemalinkxpath = '//*[@id="app"]/div[2]/div[%s]/div[1]/a' % str(sel)
-                    cinemalink = broswer.find_element_by_xpath(cinemalinkxpath)
-                    cinemalink = cinemalink.get_attribute('href')
-                    # print(cinemalink)
-                    cinemalink = re.findall('(.*?)\?poi=.*?', cinemalink)[0]
-                    # print(cinemalink)
-                    cinemalinklist.append(cinemalink)
-                    time.sleep(0.1)
-                    print(len(cinemalinklist))
-                except:
-                    break
-            # print('----一页------------------------------------------------------------------')
-            broswer.find_element_by_xpath('//ul[@class="list-pager"]/li[last()]').click()
-            lastpage = broswer.find_element_by_xpath('//ul[@class="list-pager"]/li[last()]').text
-            if lastpage != '下一页':
-                break
-
-        sql = builder(city_id, cinemalinklist)
-        city_data(sql)
-
         broswer.find_element_by_xpath('//div[@class="city-selected"]').click()
         time.sleep(0.1)
         broswer.find_element_by_xpath(citypath).click()
         time.sleep(0.1)
+
+        try:
+            firstpage = broswer.find_element_by_xpath('//ul[@class="list-pager"]/li[1]').text
+
+            if firstpage == '上一页':
+                broswer.find_element_by_xpath('//ul[@class="list-pager"]/li[2]').click()
+            cinemalinklist = []
+            while True:
+                for sel in range(1, 13):
+                    try:
+                        cinemalinkxpath = '//*[@id="app"]/div[2]/div[%s]/div[1]/a' % str(sel)
+                        cinemalink = broswer.find_element_by_xpath(cinemalinkxpath)
+                        cinemalink = cinemalink.get_attribute('href')
+                        # print(cinemalink)
+                        cinemalink = re.findall('(.*?)\?poi=.*?', cinemalink)[0]
+                        # print(cinemalink)
+                        cinemalinklist.append(cinemalink)
+                        time.sleep(0.1)
+                        # print(len(cinemalinklist))
+                    except:
+                        break
+                # print('----一页------------------------------------------------------------------')
+                broswer.find_element_by_xpath('//ul[@class="list-pager"]/li[last()]').click()
+                lastpage = broswer.find_element_by_xpath('//ul[@class="list-pager"]/li[last()]').text
+                if lastpage != '下一页':
+                    break
+
+            sql = builder(city_id, cinemalinklist)
+            city_data(sql)
+        except:
+            pass
+
 
         # cinemaListAll[city_id] = cinemalinklist
 
