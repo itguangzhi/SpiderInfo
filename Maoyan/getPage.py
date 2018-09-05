@@ -38,14 +38,35 @@
 # @Date  : 2018/8/19 - 14:28
 # @Desc  : 获取网页内容
 import datetime
+import logging
 import random
 import re
+import time
 import urllib
 from threading import Thread
 from urllib.request import urlopen
 
+import pymysql
 
-# from Maoyan.Util import Tools
+cinemainfopath = r'./data/cinemainfo.data'
+showinfopath = r'./data/showinfo.data'
+errorloggingpath = r'./logs/error.log'
+infologgingpath = r'./logs/info.log'
+
+logging.basicConfig(
+    level=logging.INFO,
+    # format='[%(asctime)s] [%(filename)s] [line:%(lineno)d] [%(levelname)s] %(message)s',
+    format='[%(asctime)s] [line:%(lineno)d] [%(levelname)s] %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S,%a',
+    filename=infologgingpath,
+    filemode='w'
+
+)
+
+cinemainfopath = r'./data/cinemainfo.data'
+showinfopath = r'./data/showinfo.data'
+
+
 
 
 class GetResponse:
@@ -54,9 +75,9 @@ class GetResponse:
     films_url = r'http://maoyan.com/films'
     cinemaslist = []
 
-    # 在影院筛选也获取影院url信息
+    # 在当前定位城市获取影院url信息
     def getcinemaslink(self):
-        print('开始获取影院链接信息')
+        print('开始获取定位城市影院链接信息')
         pageinfo = Tools.MaoYanurlopen(Tools, self.cinemas_url)
         reg = r'"?offset=(.*?)"'
         cinemaslinklist = Tools.getcinemaslinklist(Tools, pageinfo)
@@ -75,27 +96,29 @@ class GetResponse:
                     cinemaslinklist.append(nowcinemaslink)
         except:
             print('就一页')
-
         return cinemaslinklist
 
+    # 获取全国影院链接地址方法（使用）
     def getcinemaslink2(self):
-        print('开始获取影院链接地址：')
+        print('=========开始获取取全国影院链接地址=========')
         city_sql = 'SELECT DISTINCT city_id FROM maoyan_cinema_link ORDER BY city_id;'
         city_list = DataSave.unexecSQL(DataSave, city_sql)
+        logging.info('step 1 : exec sql ,result city_list :%s' % str(city_list))
         city_cinemalists = []
         for cityid in city_list:
             city_id = cityid[0]
+            logging.info('item city_id in citylist,is citylist[0],city_id:%s' % str(city_id))
             # print(city_id)
             cinemalist_city = "SELECT cinema_link FROM maoyan_cinema_link WHERE city_id = '%s'" % city_id
             cinemalist = DataSave.unexecSQL(DataSave, cinemalist_city)
+            logging.info('step 2 : exec sql ,result city_id = (%s) cinemalist :%s' % (str(city_id), str(cinemalist)))
             city_cinemalist = []
             for cinemalinks in cinemalist:
                 cinemalinked = cinemalinks[0]
                 city_cinemalist.append(cinemalinked)
             city_cinemalists.append(city_cinemalist)
-
+        logging.info('city_cinemalists:%s' % str(city_cinemalists))
         return city_cinemalists
-
 
     # 获取影院排期页面内容及信息
     def getcinemapageinfo(self, link):
@@ -105,34 +128,6 @@ class GetResponse:
         # 拿到影院排映信息
         showlist = self.getcinemashowinfo(self, pageinfo)
         return serviceinfo, showlist
-
-    # 获取城市信息信息
-    def getaddressinfo(self):
-        link = 'http://maoyan.com/cinema/7524'
-        pageinfo = Tools.MaoYanurlopen(Tools, link)
-
-        addrreg = r'<a class="js-city-name" data-ci="(.*?)" data-val="{ choosecityid:.*? }" data-act="cityChange-click">(.*?)</a>'
-        addrs = re.findall(addrreg, pageinfo)
-        addrlist = []
-        for addr in addrs:
-            addrlib = {}
-            addrlist['city_id'] = addr[0]
-            addrlist['city_name'] = addr[1]
-            addrlist.append(addrlib)
-        return addrlist
-
-    def getaddressinfo2(self):
-        city_info = ''
-        info = str(city_info, encoding='utf-8')
-        addrreg = r'<a class="js-city-name" data-ci="(.*?)" data-val="{ choosecityid:.*? }" data-act="cityChange-click">(.*?)</a>'
-        addrs = re.findall(addrreg, info)
-        addrlist = []
-        for addr in addrs:
-            addrlib = {}
-            addrlist['city_id'] = addr[0]
-            addrlist['city_name'] = addr[1]
-            addrlist.append(addrlib)
-        return addrlist
 
     # 获取影院服务信息,传入link只为了获取影院ID
     def getcinemaserviceinfo(self, pageinfo, link):
@@ -150,11 +145,10 @@ class GetResponse:
         cinemainfo['city_id'] = str(
             DataSave.unexecSQL(DataSave, "SELECT city_id FROM maoyan_cinema_link WHERE cinema_link = '%s'" % link)[0][
                 0])
-        print(cinemainfo['city_id'])
         cinemainfo['cinema_link'] = link
         cinemainfo['cinema_name'] = re.findall(cinemanamereg, cinemaservice)[0]
-        cinemainfo['cinema_address '] = re.findall(cinemaaddrreg, cinemaservice)[0]
-        cinemainfo['cinema_tel '] = re.findall(cinematelreg, cinemaservice)[0]
+        cinemainfo['cinema_address'] = re.findall(cinemaaddrreg, cinemaservice)[0]
+        cinemainfo['cinema_tel'] = re.findall(cinematelreg, cinemaservice)[0]
         try:
             cinemainfo['cinema_service_3Dglasses_info'] = re.findall(cinema3Dglassreg, cinemaservice)[0]
         except:
@@ -163,20 +157,17 @@ class GetResponse:
             cinemainfo['cinema_service_3Dglasses_by'] = re.findall(cinema3Dglasstagreg, cinemaservice)[0]
         except:
             cinemainfo['cinema_service_3Dglasses_by'] = '-'
-
         try:
-            cinemainfo['cinema_service_child '] = re.findall(cinemachildreg, cinemaservice)[1]
+            cinemainfo['cinema_service_child'] = re.findall(cinemachildreg, cinemaservice)[1]
         except:
-            cinemainfo['cinema_service_child '] = '-'
-
+            cinemainfo['cinema_service_child'] = '-'
         try:
             cinemainfo['cinema_service_park'] = re.findall(cinemaparkreg, cinemaservice)[0]
         except:
             cinemainfo['cinema_service_park'] = '-'
-
         cinemainfo['creation_date'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        cinemainfo['last_update_time '] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-
+        cinemainfo['last_update_time'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        logging.debug('cinemainfo:%s' % str(cinemainfo))
         return cinemainfo
 
     # 获取影院排期
@@ -189,35 +180,76 @@ class GetResponse:
         showinfolist = re.findall(showinfolistsreg, cinemashowinfo)
         for showinfos in showinfolist:
             showinfo = {}
-            # print(showinfos)
             showidreg = r'/xseats/(.*?)\?movieId=(.*?)&cinemaId=(.*?)"'
-            # print(re.findall(showidreg, showinfos))
-            showinfo['show_id '] = re.findall(showidreg, showinfos)[0][0]
+            showinfo['show_id'] = re.findall(showidreg, showinfos)[0][0]
             showinfo['movie_id'] = re.findall(showidreg, showinfos)[0][1]
-            movie_name = DataSave.unexecSQL(DataSave,
-                                            "SELECT movie_name FROM maoyan_movie_info WHERE movie_id = '%s'" % showinfo[
-                                                'movie_id'])[0][0]
+            try:
+                movie_name = DataSave.unexecSQL(DataSave,
+                                                "SELECT movie_name FROM maoyan_movie_info WHERE movie_id = '%s'" %
+                                                showinfo['movie_id'])[0][0]
+                showinfo['movie_name'] = movie_name
+            except:
+                logging.warning('movie_name 没有获取到，当前影片ID为:%s' % str(showinfo['movie_id']))
+                showinfo['movie_name'] = '-'
 
-            showinfo['movie_name'] = movie_name
             showinfo['cinema_id'] = re.findall(showidreg, showinfos)[0][2]
-            cinema_name = DataSave.unexecSQL(DataSave,
-                                             "SELECT cinema_name FROM maoyan_cinema_info WHERE cinema_id = '%s'" %
-                                             showinfo['cinema_id'])[0][0]
-            showinfo['cinema_name'] = cinema_name
-            showinfo['show_date '] = str(showinfo['show_id '])[:4] + '-' + str(showinfo['show_id '])[4:6] + '-' + str(
-                showinfo['show_id '])[6:8]
+            try:
+                cinemaservicereg = r'<div class="cinema-brief-container">(.*?)<div class="cinema-map"'
+                cinemaservice = re.findall(cinemaservicereg, pageinfo, re.M)[0]
+                cinemanamereg = r'<h3 class="name text-ellipsis">(.*?)</h3>'
+                cinema_name = re.findall(cinemanamereg, cinemaservice)[0]
+                # cinema_name = DataSave.unexecSQL(DataSave, "SELECT cinema_name FROM maoyan_cinema_info WHERE cinema_id = '%s'" % showinfo['cinema_id'])[0][0]
+                showinfo['cinema_name'] = cinema_name
+            except:
+                logging.warning('cinema_name 没有获取到，当前影院名获取失败，影院ID为%s' % str(showinfo['cinema_id']))
+                showinfo['cinema_name'] = '-'
+            showinfo['show_date'] = str(showinfo['show_id'])[:4] + '-' + str(showinfo['show_id'])[4:6] + '-' + str(
+                showinfo['show_id'])[6:8]
             schedulreg = r'"begin-time">(.*?)</span><br/><spanclass="end-time">(.*?)散场</span></td><td><spanclass="lang">(.*?)</span></td><td><spanclass="hall">(.*?)</span>'
-            # print(re.findall(schedulreg, showinfos))
-            showinfo['begin_time '] = re.findall(schedulreg, showinfos)[0][0]
-            showinfo['end_time '] = re.findall(schedulreg, showinfos)[0][1]
-            showinfo['language '] = re.findall(schedulreg, showinfos)[0][2]
-            showinfo['hall '] = re.findall(schedulreg, showinfos)[0][3]
-            showinfo['pos '] = '-'
+            showinfo['begin_time'] = re.findall(schedulreg, showinfos)[0][0]
+            showinfo['end_time'] = re.findall(schedulreg, showinfos)[0][1]
+            showinfo['language'] = re.findall(schedulreg, showinfos)[0][2]
+            showinfo['hall'] = re.findall(schedulreg, showinfos)[0][3]
+            showinfo['pos'] = '-'
             # showinfo['creation_date'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            showinfo['last_update_time '] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-
+            showinfo['last_update_time'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            # logging.info("showinfo:%s" % str(showinfo))
             showlist.append(showinfo)
+            logging.debug("showlist:%s" % str(showlist))
         return showlist
+
+    '''弃用
+        # 获取城市信息信息()
+        def getaddressinfo(self):
+            link = 'http://maoyan.com/cinema/7524'
+            pageinfo = Tools.MaoYanurlopen(Tools, link)
+
+            addrreg = r'<a class="js-city-name" data-ci="(.*?)" data-val="{ choosecityid:.*? }" data-act="cityChange-click">(.*?)</a>'
+            addrs = re.findall(addrreg, pageinfo)
+            addrlist = []
+            for addr in addrs:
+                addrlib = {}
+                addrlist['city_id'] = addr[0]
+                addrlist['city_name'] = addr[1]
+                addrlist.append(addrlib)
+            return addrlist
+
+
+        # 获取全国城市信息（弃用）
+        def getaddressinfo2(self):
+            city_info = ''
+            info = str(city_info, encoding='utf-8')
+            addrreg = r'<a class="js-city-name" data-ci="(.*?)" data-val="{ choosecityid:.*? }" data-act="cityChange-click">(.*?)</a>'
+            addrs = re.findall(addrreg, info)
+            addrlist = []
+            for addr in addrs:
+                addrlib = {}
+                addrlist['city_id'] = addr[0]
+                addrlist['city_name'] = addr[1]
+                logging.debug('addrlist:%s'%str(addrlist))
+                addrlist.append(addrlib)
+            return addrlist
+        '''
 
 
 class Tools:
@@ -544,28 +576,31 @@ class Information:
 class DataSave:
 
     def connectionDB(self):
-        import pymysql
-        conn = pymysql.connect(
-            host='192。168.30.111',
-            port=3306,
-            user='root',
-            passwd='123456',
-            charset='utf8',
-            database='spiderInc'
-        )
-        return conn
 
+        # pool = PooledDB()
+        try:
+            conn = pymysql.connect(host='192.168.30.111', port=3306, user='root', passwd='123456', charset='utf8',
+                                   database='spiderInc')
+            return conn
+        except Exception as e:
+            logging.error('数据库获取连接失败，报错日志为：%s' % e)
+
+    # 异步sql
     @Tools.async
     def execSQL(self, sql):
         conn = DataSave.connectionDB(DataSave)
         cur = conn.cursor()
-        cur.execute(sql)
-        res = cur.fetchall()
+        try:
+            cur.execute(sql)
+            res = cur.fetchall()
+            return res
+        except:
+            logging.error('SQL执行失败，执行语句为:%s' % str(sql))
         cur.close()
         conn.commit()
         conn.close()
-        return res
 
+    # 同步执行SQL
     def unexecSQL(self, sql):
         conn = DataSave.connectionDB(DataSave)
         cur = conn.cursor()
@@ -588,23 +623,87 @@ class DataSave:
                 except:
                     print('[ Error ]' + str(execinfo) + '执行失败')
 
+    # 存储文件-打开文件
+    def openfile(self, filepath):
+        f = open(filepath, 'a+', encoding='utf-8')
+        return f
+
+    # 存储文件-写入文件
+    def writefile(self, f, data):
+        f.writelines(str(data) + '\n')
+
+    # 保存cinemainfo的信息到文件
+    def cinemainfosave(self, data, writef):
+        # 数据信息： {'cinema_id': '616', 'city_id': '59', 'cinema_link': 'http://maoyan.com/cinema/616', 'cinema_name': '希望电影城', 'cinema_address': '都江堰市建设路天和盛世4栋3楼（近沃尔玛超市）', 'cinema_tel': '028-87120256', 'cinema_service_3Dglasses_info': '地下停车场 乘电梯可直接到达影城', 'cinema_service_3Dglasses_by': '-', 'cinema_service_child': '-', 'cinema_service_park': '地下停车场 乘电梯可直接到达影城', 'creation_date': '2018-09-04 17:52:04', 'last_update_time': '2018-09-04 17:52:04'}
+        # 数据库结构：cinema_id,city_id,cinema_name,cinema_address,cinema_tel,cinema_service_3Dglasses_info,cinema_service_3Dglasses_by,cinema_service_child,cinema_service_park,cinema_link,creation_date,last_update_time,
+        line = str(data['cinema_id']) + ','
+        line = line + str(data['city_id']) + ','
+        line = line + str(data['cinema_name']) + ','
+        line = line + str(data['cinema_address']) + ','
+        line = line + str(data['cinema_tel']) + ','
+        line = line + str(data['cinema_service_3Dglasses_info']) + ','
+        line = line + str(data['cinema_service_3Dglasses_by']) + ','
+        line = line + str(data['cinema_service_child']) + ','
+        line = line + str(data['cinema_service_park']) + ','
+        line = line + str(data['cinema_link']) + ','
+        line = line + str(data['creation_date']) + ','
+        line = line + str(data['last_update_time'])
+        self.writefile(self, writef, line)
+        return line
+
+    # 保存showinfo的内容到文件
+    def showinfosave(self, datalist, writef):
+        lines = ''
+        # 数据信息[{'show_id': '201809040268614', 'movie_id': '343070', 'movie_name': '精灵旅社3：疯狂假期', 'cinema_id': '283', 'cinema_name': '嘉和电影院', 'show_date': '2018-09-04', 'begin_time': '19:50', 'end_time': '21:28', 'language': '国语3D', 'hall': '2号厅', 'pos': '-', 'last_update_time': '2018-09-04 18:21:53'}, {'show_id': '201809040268613', 'movie_id': '343208', 'movie_name': '蚁人2：黄蜂女现身', 'cinema_id': '283', 'cinema_name': '嘉和电影院', 'show_date': '2018-09-04', 'begin_time': '19:50', 'end_time': '21:49', 'language': '国语3D', 'hall': '3号厅', 'pos': '-', 'last_update_time': '2018-09-04 18:21:53'}]
+        for data in datalist:
+
+            line = str(data['show_id']) + ','
+            line = line + str(data['cinema_id']) + ','
+            try:
+                line = line + str(data['cinema_name']) + ','
+            except:
+                line = line + str('-') + ','
+                logging.warning('影院ID: %s 在未获取到' % str(data['cinema_id']))
+                pass
+            line = line + str(data['movie_id']) + ','
+            try:
+                line = line + str(data['movie_name']) + ','
+            except:
+                line = line + str('-') + ','
+                logging.warning('影片ID: %s 在数据库中未检索到 ：%s' % (str(data['movie_id']), str(data)))
+            line = line + str(data['show_date']) + ','
+            line = line + str(data['begin_time']) + ','
+            line = line + str(data['end_time']) + ','
+            line = line + str(data['language']) + ','
+            line = line + str(data['hall']) + ','
+            line = line + str(data['pos']) + ','
+            # line = line + str(data['creation_date']) + ','
+            line = line + str('-') + ','
+            line = line + str(data['last_update_time'])
+            self.writefile(self, writef, line)
+            lines += line + '\n'
+        return lines
+
+
 
 class SpiderMovieInfo:
     menuURL = ''
 
+    # 打开影片信息页
     def getResponse(self, movieID: str):
         url = 'https://piaofang.maoyan.com/movie/%s' % movieID
         HTMLpage = urlopen(url)
         page = HTMLpage.read().decode('utf-8')
         return page
 
+    # 获取影片排次ID
     def gethref(self, pageinfo, movieID):
         href = re.findall('href="/movie/%s/(.*?)"' % movieID, pageinfo)
         return href
 
+    #  获取影片信息页内容
     def getinfo(self, page, movieID: str):
         pageinfo = {}
-
         pageinfo['movie_id'] = movieID
         movieREG = '<span class="info-title-content">(.*?)</span>'
         pageinfo['movie_name'] = re.findall(movieREG, page)[0].replace('&quot;', '"')
@@ -625,10 +724,85 @@ class SpiderMovieInfo:
             page = self.getResponse(SpiderMovieInfo, movieID)
             # href = SpiderMovieInfo.gethref(SpiderMovieInfo, page, movieID)
             info = self.getinfo(self, page, movieID)
-            print('%s 影片数据已经获取 ' % info['movie_name'])
+            logging.debug('┣ %s 影片数据已经获取 ' % info['movie_name'])
             infomation.append(info)
 
         return infomation
+
+
+class RUN:
+    # 以数据入库的形式存储影院详情页数据
+    # @Tools.async
+    def masterinfo(self, cinemalinks):
+        i = 1
+        for cinemalink in cinemalinks:
+            listlength = len(cinemalinks)
+            logging.info('┏━(' + str(i) + '/' + str(listlength) + ')━ 打开影院链接cinemalink:%s' % cinemalink)
+            cinemainfo = GetResponse.getcinemapageinfo(GetResponse, cinemalink)[0]
+            logging.info(
+                '┣━(' + str(i) + '/' + str(listlength) + ')━━已经获取 %s 影院基本信息的数据' % str(cinemainfo['cinema_name']))
+            cinemainfoSQL = Tools.mysqlbuild(Tools, cinemainfo, 'maoyan_cinema_info')
+            logging.debug('┣━(' + str(i) + '/' + str(listlength) + ')━━━ 构建影院基本信息SQL： %s ' % str(cinemainfoSQL))
+            DataSave.execSQL(DataSave, cinemainfoSQL)
+            logging.info('┣━(' + str(i) + '/' + str(listlength) + ')━━━━ 影院基本信息入库成功')
+            cinemashowes = GetResponse.getcinemapageinfo(GetResponse, cinemalink)[1]
+            logging.info('┣━(' + str(i) + '/' + str(listlength) + ')━━ 已经获取 %s 影院排映信息' % str(cinemainfo['cinema_name']))
+            logging.debug('┗━(' + str(i) + '/' + str(listlength) + ')━━━━ 影院排映数据为：%s' % cinemashowes)
+
+            if len(cinemashowes) == 0:
+                logging.warning(' %s 影院的排映数据为空' % str(cinemainfo['cinema_name']))
+                continue
+            else:
+                try:
+                    showSQL = Tools.mysqlAllbuild(Tools, cinemashowes, 'maoyan_show_info')
+                    DataSave.execSQL(DataSave, showSQL)
+                    logging.info('┗━(' + str(i) + '/' + str(listlength) + ')━━━━ 影院排映信息入库成功')
+                    i += 1
+                    time.sleep(1)
+                except:
+                    logging.ERROR('构建sql失败，' + '影院地址为：%s' % str(cinemalink) + '源数据为：%s' % str(cinemashowes))
+                continue
+            # cinemalinks.remove(cinemalink)
+
+    # 以文件的形式存储影院详情页数据
+    @Tools.async
+    def savefilemain(self, cinemalinks):
+        cinemainfofile = DataSave.openfile(DataSave, cinemainfopath)
+        showinfofile = DataSave.openfile(DataSave, showinfopath)
+        for cinemalink in cinemalinks:
+            logging.info('cinemalink:%s' % cinemalink)
+            cinemainfo = GetResponse.getcinemapageinfo(GetResponse, cinemalink)[0]
+            logging.info('└━┴ 已经获取 %s 影院的数据' % str(cinemainfo['cinema_name']))
+
+            linedata = DataSave.cinemainfosave(DataSave, cinemainfo, cinemainfofile)
+            logging.debug('持久化 %s 影院的数据:%s' % (str(cinemainfo['cinema_name']), linedata))
+
+            cinemashowes = GetResponse.getcinemapageinfo(GetResponse, cinemalink)[1]
+            logging.info('└━━┴ 已经获取 %s 影院的排映数据' % str(cinemainfo['cinema_name']))
+            if len(cinemashowes) == 0:
+                logging.warning(' %s 影院的排映数据为空' % str(cinemainfo['cinema_name']))
+                continue
+            else:
+                cinemashowlines = DataSave.showinfosave(DataSave, cinemashowes, showinfofile)
+                logging.debug('持久化 %s 影院的排映数据:%s' % (str(cinemainfo['cinema_name']), cinemashowlines))
+                logging.info('└━━┴ 存储 %s 影院的排映数据：成功' % str(cinemainfo['cinema_name']))
+            time.sleep(1)
+        # cinemainfofile.close()
+        # showinfofile.close()
+
+    # 以数据入库的形式更新未来排映的影片信息
+    @Tools.async
+    def execmovieinfo(self):
+        movieidSQL = 'SELECT DISTINCT(movie_id) FROM maoyan_show_info WHERE show_date >= CAST(SYSDATE() AS DATE) ORDER BY movie_id;'
+        SQLRES = DataSave.unexecSQL(DataSave, movieidSQL)
+        logging.info('┏共计有%d部电影数据需要更新' % len(SQLRES))
+        res = str(SQLRES).replace(',', '').replace('((', '').replace('))', '').replace(' ', '').split(')(')
+        # res = str(SQLRES).replace(' ','').replace('(', '').replace(')', '').replace(',,', ',').split(',')
+        movieinfomation = SpiderMovieInfo.getmovieresource(SpiderMovieInfo, res)
+        movieSQL = Tools.mysqlAllbuild(Tools, movieinfomation, 'maoyan_movie_info')
+        DataSave.execSQL(DataSave, movieSQL)
+        logging.info('┗影片数据更新完成')
+
 
 if __name__ == '__main__':
     nowdatetime = str(datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S'))
@@ -646,50 +820,13 @@ if __name__ == '__main__':
     DataSave.execSQL(DataSave, citysql)
     '''
 
+    # 检索遍历当前时间以后时间内的影片数据并更新
+    RUN.execmovieinfo(RUN)
+
     # cinemalinklist = GetResponse.getcinemaslink(GetResponse)
     cinemalinklist = GetResponse.getcinemaslink2(GetResponse)
-    # print(cinemalinklist)
+    logging.info('城市总数：%s' % len(cinemalinklist))
     for cinemalinks in cinemalinklist:
-        for cinemalink in cinemalinks:
-            cinemainfo = GetResponse.getcinemapageinfo(GetResponse, cinemalink)[0]
-            print('正在获取 %s 影院的数据' % str(cinemainfo['cinema_name']))
-            cinemainfoSQL = Tools.mysqlbuild(Tools, cinemainfo, 'maoyan_cinema_info')
-            DataSave.execSQL(DataSave, cinemainfoSQL)
-            # with open(filepath, 'a+', encoding='utf-8') as f:
-            #     f.writelines(str(cinemainfoSQL) + '\n')
-            cinemashowes = GetResponse.getcinemapageinfo(GetResponse, cinemalink)[1]
-            try:
-                showSQL = Tools.mysqlAllbuild(Tools, cinemashowes, 'maoyan_show_info')
-            except:
-                print('构建sql失败，源数据为：%s' % str(cinemashowes))
-                print('影院地址为：%s' % str(cinemalink))
-                continue
-
-            DataSave.execSQL(DataSave, showSQL)
-            # with open(filepath2, 'a+', encoding='utf-8') as f1:
-            #     f1.writelines(str(sqls) + '\n')
-            # 按行生成sql
-            # for cinemashow in cinemashowes:
-            #     cinemashowSQL = Tools.mysqlbuild(Tools, cinemashow, 'maoyan_show_info')
-            #     with open(filepath, 'a+',encoding='utf-8') as f:
-            #         f.writelines(str(cinemashowSQL)+'\n')
-
-    movieidSQL = 'SELECT DISTINCT(movie_id) FROM maoyan_show_info ORDER BY movie_id;'
-    SQLRES = DataSave.unexecSQL(DataSave, movieidSQL)
-    print('共计有%d部电影数据需要更新' % len(SQLRES))
-    res = str(SQLRES).replace(',', '').replace('((', '').replace('))', '').replace(' ', '').split(')(')
-    # res = str(SQLRES).replace(' ','').replace('(', '').replace(')', '').replace(',,', ',').split(',')
-
-    movieinfomation = SpiderMovieInfo.getmovieresource(SpiderMovieInfo, res)
-    movieSQL = Tools.mysqlAllbuild(Tools, movieinfomation, 'maoyan_movie_info')
-    DataSave.execSQL(DataSave, movieSQL)
-
-
-
-
-
-
-    # f.close()
-    # f1.close()
-    enddatetime = str(datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S'))
-    print('爬虫结束%s' % enddatetime)
+        print(len(cinemalinks))
+        RUN.masterinfo(RUN, cinemalinks)  # 异步数据存储到数据库
+        # RUN.savefilemain(RUN,cinemalinks) # 异步数据存储到文件
