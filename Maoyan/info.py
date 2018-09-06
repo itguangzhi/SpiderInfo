@@ -36,12 +36,16 @@
 
 # @File  : info.py
 # @Author: huguangzhi
-# @ContactEmail : huguangzhi@ucsdigital.com.com 
-# @ContactPhone : 13121961510 
+# @ContactEmail : huguangzhi@ucsdigital.com.com
+# @ContactPhone : 13121961510
 # @Date  : 2018-08-21 - 16:08
 # @Desc  :
 import re
 from urllib.request import urlopen
+
+import pymysql
+
+
 class information:
     city_info = ['150:150:阿拉善盟', '151:151:鞍山', '197:197:安庆', '238:238:安阳', '319:319:阿坝', '324:324:安顺', '359:359:安康',
                  '400:400:阿勒泰', '394:394:阿克苏', '490:490:安吉', '588:588:安丘', '699:699:安岳', '807:807:安平', '873:873:安宁',
@@ -238,6 +242,19 @@ class SpiderMovieInfo:
         pageinfo['movie_name_other'] = re.findall(movieREG, page)
 
 
+class mysqlinsert:
+    def insertTo(self, sql):
+        conn = pymysql.connect(host='192.168.30.111',
+                               user='root', password="123456",
+                               database='spiderInc', port=3306,
+                               charset='utf8'
+                               )
+        cur = conn.cursor()
+        a = cur.execute(sql)
+        res = cur.fetchall()
+        print(a)
+        print(res)
+
 if __name__ == '__main__':
-    page = SpiderMovieInfo.getResponse(SpiderMovieInfo, '343208')
-    href = SpiderMovieInfo.gethref(SpiderMovieInfo, page, '343208')
+    insertsql = "replace into maoyan_show_info (show_id,movie_id,movie_name,cinema_id,cinema_name,show_date,begin_time,end_time,language,hall,pos,last_update_time)VALUES ('201809060033771', '341737', '碟中谍6：全面瓦解', '2', '博纳国际影城(通州北苑店)', '2018-09-06', '13:30', '15:58', '英语3D', '4号厅', '-', '2018-09-06 12:34:20');"
+    mysqlinsert.insertTo(mysqlinsert, insertsql)

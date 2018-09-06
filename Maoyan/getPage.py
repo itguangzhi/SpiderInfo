@@ -220,7 +220,13 @@ class GetResponse:
                 cinema_name = re.findall(cinemanamereg, cinemaservice)[0]
                 # cinema_name = DataSave.unexecSQL(DataSave, "SELECT cinema_name FROM maoyan_cinema_info WHERE cinema_id = '%s'" % showinfo['cinema_id'])[0][0]
                 showinfo['cinema_name'] = cinema_name
+
             except:
+                cinema_name = DataSave.unexecSQL(DataSave,
+                                                 "SELECT cinema_name FROM maoyan_cinema_info WHERE cinema_id = '%s'" %
+                                                 showinfo['cinema_id'])[0][0]
+                showinfo['cinema_name'] = cinema_name
+            else:
                 logging.warning('cinema_name 没有获取到，当前影院名获取失败，影院ID为%s' % str(showinfo['cinema_id']))
                 showinfo['cinema_name'] = '-'
             showinfo['show_date'] = str(showinfo['show_id'])[:4] + '-' + str(showinfo['show_id'])[4:6] + '-' + str(
