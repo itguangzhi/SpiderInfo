@@ -47,11 +47,21 @@ from threading import Thread
 from urllib.request import urlopen
 
 import pymysql
+# 数据落地到本地文件路径
+from DBUtils.PooledDB import PooledDB
 
 cinemainfopath = r'./data/cinemainfo.data'
 showinfopath = r'./data/showinfo.data'
+# 日志输出路径
 errorloggingpath = r'./logs/error.log'
 infologgingpath = r'./logs/info.log'
+# 数据库连接
+mysql_host = '192.168.30.111'
+mysql_port = 3306
+mysql_user = 'root'
+mysql_passwd = '123456'
+mysql_charset = 'utf8'
+mysql_database = 'spiderInc'
 
 logging.basicConfig(
     level=logging.INFO,
@@ -62,10 +72,6 @@ logging.basicConfig(
     filemode='w'
 
 )
-
-cinemainfopath = r'./data/cinemainfo.data'
-showinfopath = r'./data/showinfo.data'
-
 
 
 
@@ -103,20 +109,34 @@ class GetResponse:
         print('=========开始获取取全国影院链接地址=========')
         city_sql = 'SELECT DISTINCT city_id FROM maoyan_cinema_link ORDER BY city_id;'
         city_list = DataSave.unexecSQL(DataSave, city_sql)
-        logging.info('step 1 : exec sql ,result city_list :%s' % str(city_list))
+        logging.debug('step 1 : exec sql ,result city_list :%s' % str(city_list))
         city_cinemalists = []
         for cityid in city_list:
             city_id = cityid[0]
-            logging.info('item city_id in citylist,is citylist[0],city_id:%s' % str(city_id))
+            logging.debug('item city_id in citylist,is citylist[0],city_id:%s' % str(city_id))
             # print(city_id)
             cinemalist_city = "SELECT cinema_link FROM maoyan_cinema_link WHERE city_id = '%s'" % city_id
             cinemalist = DataSave.unexecSQL(DataSave, cinemalist_city)
-            logging.info('step 2 : exec sql ,result city_id = (%s) cinemalist :%s' % (str(city_id), str(cinemalist)))
+            logging.debug('step 2 : exec sql ,result city_id = (%s) cinemalist :%s' % (str(city_id), str(cinemalist)))
             city_cinemalist = []
             for cinemalinks in cinemalist:
                 cinemalinked = cinemalinks[0]
                 city_cinemalist.append(cinemalinked)
             city_cinemalists.append(city_cinemalist)
+        # 数据库中存在一部分没有连接，并且不记录在link表中的影院id
+        cinemalinkNONE = "SELECT cinema_id FROM maoyan_cinema_info WHERE city_id IS NULL"
+        cinemalinkID = DataSave.unexecSQL(DataSave, cinemalinkNONE)
+        try:
+            cinemalinkNONEList = []
+            for cinemaid in cinemalinkID:
+                cinema_id = cinemaid[0]
+                cinemalink = 'http://maoyan.com/cinema/%s' % str(cinema_id)
+                cinemalinkNONEList.append(cinemalink)
+
+            city_cinemalists.append(cinemalinkNONEList)
+        except:
+            logging.info('数据库中没有连接为空的影院信息')
+            pass
         logging.info('city_cinemalists:%s' % str(city_cinemalists))
         return city_cinemalists
 
@@ -303,6 +323,7 @@ class Tools:
         sql = "replace into %s (%s)VALUES(%s);" % (Tbname, field, values)
         return sql
 
+    # 构建sql入库语句
     def mysqlAllbuild(self, tbl, tablename: str):
         field = ''
         values = []
@@ -323,13 +344,49 @@ class Tools:
             value = []
             for key in item:
                 value.append(item[key])
+            fsda = value
             values.append(value)
         values = str(values).replace('[', '(').replace(']', ')')
         values = values[1:-1]
 
         Tbname = tablename
+        # sql = "replace into %s (%s)VALUES %s;" % (Tbname, field, values)
         sql = "replace into %s (%s)VALUES %s;" % (Tbname, field, values)
         return sql
+
+    def mysqlAllperbuild(self, tbl, tablename: str):
+        SQLlanguage = ''
+        field = ''
+
+        for item in tbl:
+            # item 是以键值对存在的字典类型
+            for key in item:
+                # key是字典中的列名
+                field = field + ',' + key
+            break
+
+        fields = list(field)
+
+        fields[0] = ''
+        field = ''.join(fields)
+
+        Tbname = tablename
+        # sql = "replace into %s (%s)VALUES %s;" % (Tbname, field, values)
+        sql = "replace into %s (%s)VALUES " % (Tbname, field)
+
+        for item in tbl:
+            # item 是以键值对存在的字典类型
+            value = []
+            for key in item:
+                value.append(item[key])
+            datasql = value
+
+            fas = sql + str(value).replace('[', '(').replace(']', ')') + ';'
+            SQLlanguage = SQLlanguage + fas
+
+        print(SQLlanguage)
+
+        return SQLlanguage
 
     def async(f):
         def wrapper(*args, **kwargs):
@@ -577,10 +634,23 @@ class DataSave:
 
     def connectionDB(self):
 
-        # pool = PooledDB()
+        pool = PooledDB(
+            pymysql,
+            mincached=2,
+            maxcached=5,
+            maxshared=3,
+            maxconnections=6,
+            host=mysql_host,
+            port=mysql_port,
+            user=mysql_user,
+            passwd=mysql_passwd,
+            db=mysql_database,
+            charset=mysql_charset
+        )
+
         try:
-            conn = pymysql.connect(host='192.168.30.111', port=3306, user='root', passwd='123456', charset='utf8',
-                                   database='spiderInc')
+            conn = pool.connection()
+            conn.cursor()
             return conn
         except Exception as e:
             logging.error('数据库获取连接失败，报错日志为：%s' % e)
@@ -589,16 +659,19 @@ class DataSave:
     @Tools.async
     def execSQL(self, sql):
         conn = DataSave.connectionDB(DataSave)
-        cur = conn.cursor()
         try:
-            cur.execute(sql)
+            cur = conn.cursor()
+            num = cur.execute(sql)
             res = cur.fetchall()
+            logging.info('sql 返回值：%s' % str(num))
+            cur.close()
+            conn.commit()
+            conn.close()
             return res
         except:
             logging.error('SQL执行失败，执行语句为:%s' % str(sql))
-        cur.close()
-        conn.commit()
-        conn.close()
+            cur.close()
+            conn.close()
 
     # 同步执行SQL
     def unexecSQL(self, sql):
@@ -732,7 +805,7 @@ class SpiderMovieInfo:
 
 class RUN:
     # 以数据入库的形式存储影院详情页数据
-    # @Tools.async
+    @Tools.async
     def masterinfo(self, cinemalinks):
         i = 1
         for cinemalink in cinemalinks:
@@ -743,8 +816,8 @@ class RUN:
                 '┣━(' + str(i) + '/' + str(listlength) + ')━━已经获取 %s 影院基本信息的数据' % str(cinemainfo['cinema_name']))
             cinemainfoSQL = Tools.mysqlbuild(Tools, cinemainfo, 'maoyan_cinema_info')
             logging.debug('┣━(' + str(i) + '/' + str(listlength) + ')━━━ 构建影院基本信息SQL： %s ' % str(cinemainfoSQL))
-            DataSave.execSQL(DataSave, cinemainfoSQL)
-            logging.info('┣━(' + str(i) + '/' + str(listlength) + ')━━━━ 影院基本信息入库成功')
+            results = DataSave.execSQL(DataSave, cinemainfoSQL)
+            logging.info('┣━(' + str(i) + '/' + str(listlength) + ')━━━━ 影院基本信息入库成功:%s' % str(results))
             cinemashowes = GetResponse.getcinemapageinfo(GetResponse, cinemalink)[1]
             logging.info('┣━(' + str(i) + '/' + str(listlength) + ')━━ 已经获取 %s 影院排映信息' % str(cinemainfo['cinema_name']))
             logging.debug('┗━(' + str(i) + '/' + str(listlength) + ')━━━━ 影院排映数据为：%s' % cinemashowes)
@@ -755,8 +828,8 @@ class RUN:
             else:
                 try:
                     showSQL = Tools.mysqlAllbuild(Tools, cinemashowes, 'maoyan_show_info')
-                    DataSave.execSQL(DataSave, showSQL)
-                    logging.info('┗━(' + str(i) + '/' + str(listlength) + ')━━━━ 影院排映信息入库成功')
+                    result = DataSave.execSQL(DataSave, showSQL)
+                    logging.info('┗━(' + str(i) + '/' + str(listlength) + ')━━━━ 影院排映信息入库成功:%s' % str(result))
                     i += 1
                     time.sleep(1)
                 except:
@@ -800,8 +873,8 @@ class RUN:
         # res = str(SQLRES).replace(' ','').replace('(', '').replace(')', '').replace(',,', ',').split(',')
         movieinfomation = SpiderMovieInfo.getmovieresource(SpiderMovieInfo, res)
         movieSQL = Tools.mysqlAllbuild(Tools, movieinfomation, 'maoyan_movie_info')
-        DataSave.execSQL(DataSave, movieSQL)
-        logging.info('┗影片数据更新完成')
+        num = DataSave.execSQL(DataSave, movieSQL)[1]
+        logging.info('┗%s部影片数据更新完成' % str(num))
 
 
 if __name__ == '__main__':
@@ -827,6 +900,6 @@ if __name__ == '__main__':
     cinemalinklist = GetResponse.getcinemaslink2(GetResponse)
     logging.info('城市总数：%s' % len(cinemalinklist))
     for cinemalinks in cinemalinklist:
-        print(len(cinemalinks))
+        print('当前城市共计影院数：%s' % str(len(cinemalinks)))
         RUN.masterinfo(RUN, cinemalinks)  # 异步数据存储到数据库
         # RUN.savefilemain(RUN,cinemalinks) # 异步数据存储到文件
