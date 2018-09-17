@@ -36,55 +36,9 @@
 # @ContactEmail : huguangzhi@ucsdigital.com.com
 # @ContactPhone : 13121961510
 # @Date  : 2018/8/19 - 23:15
-# @Desc  : 工具包
-import re
-from urllib.request import urlopen
-from Maoyan import getPage
+# @Desc  : 工具类包
+from threading import Thread
 
-class Tools:
-    menu_url = getPage.GetResponse.menu_url
-
-    def getcinemaslinklist(self, pageinfo):
-        cinemalinklist = []
-        cinemareg = r'class="cinema-name" .*?data-val="{city_id: .*?, cinema_id: (.*?)}">(.*?)</a>'
-        cinemasinfo = re.findall(cinemareg, pageinfo)
-        for c in cinemasinfo:
-            # cinema = {}
-            # # 影院id
-            # cinema['cinema_id'] = c[0]
-            # # 影院名称
-            # cinema['cinema_name'] = c[1]
-            # 影院link
-            cinemalink = self.menu_url + '/cinema/' + str(c[0])
-            cinemalinklist.append(cinemalink)
-
-        return cinemalinklist
-
-    def MaoYanurlopen(self, link):
-        response = urlopen(link).read()
-        pageinfo = str(response, 'utf8').replace('\n', '')
-        return pageinfo
-
-        # 构建存储到mysql的入库语句
-    def mysqlbuild(self, tbl):
-            field = ''
-            values = ''
-            for f in tbl:
-                field = field + ',' + f
-                values = values + ',' + "'" + tbl[f] + "'"
-            fields = list(field)
-
-            fields[0] = ''
-            field = ''.join(fields)
-
-            value = list(values)
-
-            value[0] = ''
-            values = ''.join(value)
-
-            Tbname = ''
-            sql = "replace into %s (%s)VALUES(%s);" % (Tbname, field, values)
-            return sql
 
 class Properties(object):
 
@@ -118,3 +72,23 @@ class Properties(object):
         else:
             pro_file.close()
         return self.properties
+
+
+class MaoYan_Tools:
+
+    # 完全异步执行
+    def async(f):
+        def wrapper(*args, **kwargs):
+            thr = Thread(target=f, args=args, kwargs=kwargs)
+            thr.start()
+
+        return wrapper
+
+    # 存储文件-打开文件
+    def openfile(self, filepath):
+        f = open(filepath, 'a+', encoding='utf-8')
+        return f
+
+    # 存储文件-写入文件
+    def writefile(self, f, data):
+        f.writelines(str(data) + '\n')

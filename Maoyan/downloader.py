@@ -37,13 +37,32 @@
 # @File  : downloader.py
 # @Author: huguangzhi
 # @Drivce: Thinkpad E470
-# @ContactEmail : huguangzhi@ucsdigital.com.com 
-# @ContactPhone : 13121961510 
+# @ContactEmail : huguangzhi@ucsdigital.com.com
+# @ContactPhone : 13121961510
 # @Date  : 2018-09-17 - 15:25
 # @Desc  : 页面下载器
+from random import random
+from urllib.request import urlopen
 
-class Download:
+from Maoyan.conf.infomation import Info
+
+
+class Downloader:
     menu_url = r'http://maoyan.com'
     cinemas_url = r'http://maoyan.com/cinemas'
     films_url = r'http://maoyan.com/films'
-    cinemaslist = []
+
+    def get_response(self, link):
+        # request = urllib.request.Request(link)
+        # request.add_header('User-Agent', str(self.getUA(self)))
+        # request.add_header('Cookie',
+        #                    '__mta=248954552.1533172087368.1534732553267.1534733685746.25"; _lxsdk_cuid=164f82d7537c8-0f989cd149666d-51422e1f-100200-164f82d7537c8; uuid_n_v=v1; uuid=84AB523095F011E883FE1F23FDFD6ADB1819195A754C410281F6435BC0E4293D; _lxsdk=84AB523095F011E883FE1F23FDFD6ADB1819195A754C410281F6435BC0E4293D; _csrf=d8e8905256c16f10cbd4629efc693c1df7c2221b9e4b90901125f75d1abff9d1; __mta=248954552.1533172087368.1533806526342.1533880670342.22; theme=moviepro; _lx_utm=utm_source%3DBaidu%26utm_medium%3Dorganic; ci=140; __mta=248954552.1533172087368.1533880670342.1534754983897.23"; _lxsdk_s=165566fc902-2e-3cc-73b%7C%7C35')
+        response = urlopen(link).read()
+        pageinfo = str(response, 'utf8').replace('\n', '')
+        return pageinfo
+
+    # 获取useragent信息
+    def get_useragent(self):
+        ua = Info.useragent(Info)
+        useragent = random.choice(ua)
+        return useragent

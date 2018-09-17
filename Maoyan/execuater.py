@@ -32,9 +32,60 @@
                   别人笑我忒疯癫，我笑自己命太贱；  
                   不见满街漂亮妹，哪个归得程序员？ 
 '''
-# @File  : __init__.py.py
+# @File  : execuater.py
 # @Author: huguangzhi
-# @ContactEmail : huguangzhi@ucsdigital.com.com 
-# @ContactPhone : 13121961510 
-# @Date  : 2018-07-30 - 09:16
-# @Desc  :
+# @Drivce: Thinkpad E470
+# @ContactEmail : huguangzhi@ucsdigital.com.com
+# @ContactPhone : 13121961510
+# @Date  : 2018-09-17 - 17:14
+# @Desc  :  控制层
+import logging
+
+from Maoyan.Util import MaoYan_Tools
+from Maoyan.conf import infomation
+from Maoyan.controller import controller
+
+infomation = infomation.Info()
+
+logging.basicConfig(
+    level=logging.INFO,
+    # format='[%(asctime)s] [%(filename)s] [line:%(lineno)d] [%(levelname)s] %(message)s',
+    format='[%(asctime)s] [line:%(lineno)d] [%(levelname)s] %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S,%a',
+    filename=infomation.logfilepath('info_path'),
+    filemode='w'
+)
+
+controller = controller()
+
+
+class SqlExecuate:
+
+    # 异步sql
+    @MaoYan_Tools.async
+    def execSQL(self, sql):
+        conn = controller.connectionDB()
+        try:
+            cur = conn.cursor()
+            num = cur.execute(sql)
+            res = cur.fetchall()
+            logging.info('sql 返回值：%s' % str(num))
+            cur.close()
+            conn.commit()
+            conn.close()
+            return res
+        except:
+            logging.error('SQL执行失败，执行语句为:%s' % str(sql))
+            cur.close()
+            conn.close()
+
+    # 同步执行SQL
+    def unexecSQL(self, sql):
+        conn = controller.connectionDB()
+        cur = conn.cursor()
+        cur.execute(sql)
+        res = cur.fetchall()
+        cur.close()
+        conn.commit()
+        conn.close()
+        return res

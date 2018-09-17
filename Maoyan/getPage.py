@@ -65,6 +65,8 @@ mysql_charset = 'utf8'
 mysql_database = 'spiderInc'
 # 线程最大值
 poolsize = 50
+# 爬虫等待时间
+spider_v = 0.2
 
 
 logging.basicConfig(
@@ -72,9 +74,8 @@ logging.basicConfig(
     # format='[%(asctime)s] [%(filename)s] [line:%(lineno)d] [%(levelname)s] %(message)s',
     format='[%(asctime)s] [line:%(lineno)d] [%(levelname)s] %(message)s',
     datefmt='%Y-%m-%d %H:%M:%S,%a',
-    filename=infologgingpath,
-    filemode='w'
-
+    # filename=infologgingpath,
+    # filemode='w'
 )
 
 class GetResponse:
@@ -394,7 +395,7 @@ class Tools:
             fas = sql + str(value).replace('[', '(').replace(']', ')') + ';'
             SQLlanguage = SQLlanguage + fas
 
-        print(SQLlanguage)
+        # print(SQLlanguage)
 
         return SQLlanguage
 
@@ -795,15 +796,28 @@ class SpiderMovieInfo:
         pageinfo = {}
         pageinfo['movie_id'] = movieID
         movieREG = '<span class="info-title-content">(.*?)</span>'
+        releasedateREG = r'<span class="score-info ellipsis-1">(.*?)</span>'
         pageinfo['movie_name'] = re.findall(movieREG, page)[0].replace('&quot;', '"')
-        pageinfo['last_update_time'] = str(datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S'))
+        # 影片上映时间
+        try:
+            pageinfo['release_date'] = re.findall(releasedateREG, page)[0]
+        except:
+            pageinfo['release_date'] = '-'
+        # 影片评分
+        rating_numREG = '<span class="rating-num">(.*?)</span>'
+        try:
+            pageinfo['rating_num'] = re.findall(rating_numREG, page)[0]
+        except:
+            pageinfo['rating_num'] = '-'
 
+        pageinfo['last_update_time'] = str(datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S'))
         emovieREG = '<span class="info-etitle-content">(.*?)</span>'
         try:
             pageinfo['movie_name_other'] = re.findall(emovieREG, page)[0].replace('&quot;', '"')
         except:
             pageinfo['movie_name_other'] = '-'
 
+        logging.debug('movie_info:%s' % pageinfo)
         return pageinfo
 
     def getmovieresource(self, maoyanmovieID: list):
@@ -823,11 +837,15 @@ class RUN:
     # 以数据入库的形式存储影院详情页数据
     # @Tools.async
     def masterinfo(self, cinemalinks):
-        def run(linklist):
-            i = 1
-            for cinemalink in linklist:
-                listlength = len(cinemalinks)
-                cvr = '(' + str(i) + '/' + str(listlength) + ')'
+        i = 1
+
+        # all = len(cinemalinks)
+        def run(cinemalink):
+            # i = 1
+            # for cinemalink in linklist:
+            #     listlength = len(cinemalinks)
+            #     cvr = '(' + str(i) + '/' + str(listlength) + ')'
+            cvr = ''
                 logging.info('┏━' + cvr + '━ 打开影院链接cinemalink:%s' % cinemalink)
                 cinemainfo = GetResponse.getcinemapageinfo(GetResponse, cinemalink)[0]
                 logging.info(
@@ -842,20 +860,31 @@ class RUN:
 
                 if len(cinemashowes) == 0:
                     logging.warning(' %s 影院的排映数据为空' % str(cinemainfo['cinema_name']))
-                    continue
+                    # continue
                 else:
                     try:
                         showSQL = Tools.mysqlAllbuild(Tools, cinemashowes, 'maoyan_show_info')
                         result = DataSave.execSQL(DataSave, showSQL)
                         logging.info('┗━' + cvr + '━━━━ 影院排映信息入库成功:%s' % str(result))
-                        i += 1
-                        time.sleep(1)
+                        # i += 1
+                        time.sleep(spider_v)
                     except:
                         logging.ERROR('构建sql失败，' + '影院地址为：%s' % str(cinemalink) + '源数据为：%s' % str(cinemashowes))
-                    continue
+                    # continue
                 # cinemalinks.remove(cinemalink)
 
-        Tools.threadpoolcontronl(Tools, run, cinemalinks)
+        for cinemalink in cinemalinks:
+            print(len(cinemalink))
+            if len(cinemalink) != 0:
+                city_num = len(cinemalinks)
+                logging.info('当前城市完成进度:%s/%s' % (str(i), str(city_num)))
+                i += 1
+                try:
+                    Tools.threadpoolcontronl(Tools, run, cinemalink)
+                except:
+                    logging.info('当前链接出现问题 ：%s' % str(cinemalink))
+            else:
+                continue
 
     # 以文件的形式存储影院详情页数据
     @Tools.async
@@ -894,11 +923,12 @@ class RUN:
         movieinfomation = SpiderMovieInfo.getmovieresource(SpiderMovieInfo, res)
         try:
             movieSQL = Tools.mysqlAllbuild(Tools, movieinfomation, 'maoyan_movie_info')
-            num = DataSave.execSQL(DataSave, movieSQL)[1]
-            logging.info('┗%s部影片数据更新完成' % str(num))
+            DataSave.execSQL(DataSave, movieSQL)
+            logging.info('┗%s部影片数据更新完成' % len(movieinfomation))
         except:
-            print(movieinfomation)
-            pass
+            logging.error('影片数据更新失败！影片信息为：%s' % str(movieinfomation))
+            logging.error('更新影片的SQL为：%s' % str(movieSQL))
+
 
 
 
@@ -909,7 +939,6 @@ if __name__ == '__main__':
     # filepath2 = './platforms-%s.txt' % str(datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S'))
     # addrinfo = GetResponse.getaddressinfo(GetResponse)
     # print(addrinfo)
-
     # 城市信息爬虫
     '''
     city = Information.listTOdict(Information, Information.city_info)
@@ -917,10 +946,8 @@ if __name__ == '__main__':
     # print(citysql)
     DataSave.execSQL(DataSave, citysql)
     '''
-
     # 检索遍历当前时间以后时间内的影片数据并更新
     RUN.execmovieinfo(RUN)
-
     # cinemalinklist = GetResponse.getcinemaslink(GetResponse)
     cinemalinklist = GetResponse.getcinemaslink2(GetResponse)
     logging.info('城市总数：%s' % len(cinemalinklist))
@@ -928,3 +955,5 @@ if __name__ == '__main__':
         print('当前城市共计影院数：%s' % str(len(cinemalinks)))
         RUN.masterinfo(RUN, cinemalinklist)  # 异步数据存储到数据库
         # RUN.savefilemain(RUN,cinemalinks) # 异步数据存储到文件
+
+    print('就这么完成了？')
