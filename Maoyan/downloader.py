@@ -66,3 +66,10 @@ class Downloader:
         ua = Info.useragent(Info)
         useragent = random.choice(ua)
         return useragent
+
+    # 打开影片信息页
+    def movieResponse(self, movieID: str):
+        url = 'https://piaofang.maoyan.com/movie/%s' % movieID
+        HTMLpage = urlopen(url)
+        page = HTMLpage.read().decode('utf-8')
+        return page

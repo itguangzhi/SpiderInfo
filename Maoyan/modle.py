@@ -33,22 +33,36 @@
                   不见满街漂亮妹，哪个归得程序员？ 
 '''
 
+import logging
 
+from Maoyan.conf import infomation
 # @File  : modle.py
 # @Author: huguangzhi
 # @Drivce: Thinkpad E470
-# @ContactEmail : huguangzhi@ucsdigital.com.com 
-# @ContactPhone : 13121961510 
+# @ContactEmail : huguangzhi@ucsdigital.com.com
+# @ContactPhone : 13121961510
 # @Date  : 2018-09-17 - 17:13
 # @Desc  : 数据加载模型层
+from Maoyan.execuater import SqlExecuate
 
+SqlExecuate = SqlExecuate()
+infomation = infomation.Info()
+
+logging.basicConfig(
+    level=logging.INFO,
+    # format='[%(asctime)s] [%(filename)s] [line:%(lineno)d] [%(levelname)s] %(message)s',
+    format='[%(asctime)s] [line:%(lineno)d] [%(levelname)s] %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S,%a',
+    filename=infomation.logfilepath('info_path'),
+    filemode='w'
+)
 
 class modle:
     # 获取全国影院链接地址方法（使用）
     def getcinemaslink2(self):
         print('=========开始获取取全国影院链接地址=========')
         city_sql = 'SELECT DISTINCT city_id FROM maoyan_cinema_link ORDER BY city_id;'
-        city_list = DataSave.unexecSQL(DataSave, city_sql)
+        city_list = SqlExecuate.unexecSQL(city_sql)
         logging.debug('step 1 : exec sql ,result city_list :%s' % str(city_list))
         city_cinemalists = []
         for cityid in city_list:
@@ -56,7 +70,7 @@ class modle:
             logging.debug('item city_id in citylist,is citylist[0],city_id:%s' % str(city_id))
             # print(city_id)
             cinemalist_city = "SELECT cinema_link FROM maoyan_cinema_link WHERE city_id = '%s'" % city_id
-            cinemalist = DataSave.unexecSQL(DataSave, cinemalist_city)
+            cinemalist = SqlExecuate.unexecSQL(cinemalist_city)
             logging.debug('step 2 : exec sql ,result city_id = (%s) cinemalist :%s' % (str(city_id), str(cinemalist)))
             city_cinemalist = []
             for cinemalinks in cinemalist:
@@ -65,7 +79,7 @@ class modle:
             city_cinemalists.append(city_cinemalist)
         # 数据库中存在一部分没有连接，并且不记录在link表中的影院id
         cinemalinkNONE = "SELECT cinema_id FROM maoyan_cinema_info WHERE city_id IS NULL"
-        cinemalinkID = DataSave.unexecSQL(DataSave, cinemalinkNONE)
+        cinemalinkID = SqlExecuate.unexecSQL(cinemalinkNONE)
         try:
             cinemalinkNONEList = []
             for cinemaid in cinemalinkID:

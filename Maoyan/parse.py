@@ -46,13 +46,19 @@ import logging
 import re
 
 from Maoyan.conf.infomation import Info
+from Maoyan.downloader import Downloader
+from Maoyan.execuater import SqlExecuate
+
+Downloader = Downloader()
+SqlExecuate = SqlExecuate()
+Info = Info()
 
 logging.basicConfig(
     level=logging.INFO,
     # format='[%(asctime)s] [%(filename)s] [line:%(lineno)d] [%(levelname)s] %(message)s',
     format='[%(asctime)s] [line:%(lineno)d] [%(levelname)s] %(message)s',
     datefmt='%Y-%m-%d %H:%M:%S,%a',
-    filename=Info.logfilepath(Info, 'info_path'),
+    filename=Info.logfilepath('info_path'),
     filemode='w'
 )
 
@@ -63,7 +69,6 @@ class Pares:
     '''
     影院信息解析
     '''
-
     # 获取影院服务信息,传入link只为了获取影院ID
     def cinema_pares(self, pageinfo, link):
         cinemainfo = {}
@@ -78,8 +83,7 @@ class Pares:
         cinemaparkreg = r'<span class="tag park-tag">.*?<p class="desc text-ellipsis" title="(.*?)">'
         cinemainfo['cinema_id'] = str(link).split('/')[-1]
         cinemainfo['city_id'] = str(
-            DataSave.unexecSQL(DataSave, "SELECT city_id FROM maoyan_cinema_link WHERE cinema_link = '%s'" % link)[
-                0][0])
+            SqlExecuate.unexecSQL("SELECT city_id FROM maoyan_cinema_link WHERE cinema_link = '%s'" % link)[0][0])
         cinemainfo['cinema_link'] = link
         cinemainfo['cinema_name'] = re.findall(cinemanamereg, cinemaservice)[0]
         cinemainfo['cinema_address'] = re.findall(cinemaaddrreg, cinemaservice)[0]
@@ -100,7 +104,7 @@ class Pares:
             cinemainfo['cinema_service_park'] = re.findall(cinemaparkreg, cinemaservice)[0]
         except:
             cinemainfo['cinema_service_park'] = '-'
-        cinemainfo['creation_date'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        # cinemainfo['creation_date'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         cinemainfo['last_update_time'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         logging.debug('cinemainfo:%s' % str(cinemainfo))
         return cinemainfo
@@ -108,7 +112,6 @@ class Pares:
     '''
         排映信息解析
     '''
-
     # 获取影院排期
     def getcinemashowinfo(self, pageinfo):
         showlist = []
@@ -123,9 +126,8 @@ class Pares:
             showinfo['show_id'] = re.findall(showidreg, showinfos)[0][0]
             showinfo['movie_id'] = re.findall(showidreg, showinfos)[0][1]
             try:
-                movie_name = DataSave.unexecSQL(DataSave,
-                                                "SELECT movie_name FROM maoyan_movie_info WHERE movie_id = '%s'" %
-                                                showinfo['movie_id'])[0][0]
+                movie_name = SqlExecuate.unexecSQL("SELECT movie_name FROM maoyan_movie_info WHERE movie_id = '%s'" %
+                                                   showinfo['movie_id'])[0][0]
                 showinfo['movie_name'] = movie_name
                 # print(movie_name)
             except:
@@ -143,9 +145,8 @@ class Pares:
                 # print(cinema_name)
 
             except:
-                cinema_name = DataSave.unexecSQL(DataSave,
-                                                 "SELECT cinema_name FROM maoyan_cinema_info WHERE cinema_id = '%s'" %
-                                                 showinfo['cinema_id'])[0][0]
+                cinema_name = SqlExecuate.unexecSQL(
+                    "SELECT cinema_name FROM maoyan_cinema_info WHERE cinema_id = '%s'" % showinfo['cinema_id'])[0][0]
                 showinfo['cinema_name'] = cinema_name
             else:
                 logging.debug('cinema_name 直接通过网页获取成功，影院ID为%s，影院名为：%s' % (str(showinfo['cinema_id']), cinema_name))
@@ -165,6 +166,34 @@ class Pares:
             logging.debug("showlist:%s" % str(showlist))
         return showlist
 
+    '''
+       影片信息解析
+    '''
     # 影片信息解析
-    def movie_pares(self):
-        pass
+    def movie_pares(self, page, movieID: str):
+        pageinfo = {}
+        pageinfo['movie_id'] = movieID
+        movieREG = '<span class="info-title-content">(.*?)</span>'
+        releasedateREG = r'<span class="score-info ellipsis-1">(.*?)</span>'
+        pageinfo['movie_name'] = re.findall(movieREG, page)[0].replace('&quot;', '"')
+        # 影片上映时间
+        try:
+            pageinfo['release_date'] = re.findall(releasedateREG, page)[0]
+        except:
+            pageinfo['release_date'] = '-'
+        # 影片评分
+        rating_numREG = '<span class="rating-num">(.*?)</span>'
+        try:
+            pageinfo['rating_num'] = re.findall(rating_numREG, page)[0]
+        except:
+            pageinfo['rating_num'] = '-'
+
+        pageinfo['last_update_time'] = str(datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S'))
+        emovieREG = '<span class="info-etitle-content">(.*?)</span>'
+        try:
+            pageinfo['movie_name_other'] = re.findall(emovieREG, page)[0].replace('&quot;', '"')
+        except:
+            pageinfo['movie_name_other'] = '-'
+
+        logging.debug('movie_info:%s' % pageinfo)
+        return pageinfo

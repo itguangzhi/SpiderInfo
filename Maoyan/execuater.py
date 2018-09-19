@@ -38,7 +38,7 @@
 # @ContactEmail : huguangzhi@ucsdigital.com.com
 # @ContactPhone : 13121961510
 # @Date  : 2018-09-17 - 17:14
-# @Desc  :  控制层
+# @Desc  :  执行层
 import logging
 
 from Maoyan.Util import MaoYan_Tools
