@@ -252,7 +252,7 @@ class mysqlinsert:
         cur = conn.cursor()
         a = cur.execute(sql)
         res = cur.fetchall()
-        print(a)
+
         print(res)
 
 if __name__ == '__main__':

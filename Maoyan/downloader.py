@@ -33,7 +33,6 @@
                   不见满街漂亮妹，哪个归得程序员？ 
 '''
 
-
 # @File  : downloader.py
 # @Author: huguangzhi
 # @Drivce: Thinkpad E470
@@ -44,28 +43,45 @@
 from random import random
 from urllib.request import urlopen
 
+import requests
+
 from Maoyan.conf.infomation import Info
 
 
 class Downloader:
-    menu_url = r'http://maoyan.com'
-    cinemas_url = r'http://maoyan.com/cinemas'
-    films_url = r'http://maoyan.com/films'
-
-    def get_response(self, link):
-        # request = urllib.request.Request(link)
-        # request.add_header('User-Agent', str(self.getUA(self)))
-        # request.add_header('Cookie',
-        #                    '__mta=248954552.1533172087368.1534732553267.1534733685746.25"; _lxsdk_cuid=164f82d7537c8-0f989cd149666d-51422e1f-100200-164f82d7537c8; uuid_n_v=v1; uuid=84AB523095F011E883FE1F23FDFD6ADB1819195A754C410281F6435BC0E4293D; _lxsdk=84AB523095F011E883FE1F23FDFD6ADB1819195A754C410281F6435BC0E4293D; _csrf=d8e8905256c16f10cbd4629efc693c1df7c2221b9e4b90901125f75d1abff9d1; __mta=248954552.1533172087368.1533806526342.1533880670342.22; theme=moviepro; _lx_utm=utm_source%3DBaidu%26utm_medium%3Dorganic; ci=140; __mta=248954552.1533172087368.1533880670342.1534754983897.23"; _lxsdk_s=165566fc902-2e-3cc-73b%7C%7C35')
-        response = urlopen(link).read()
-        pageinfo = str(response, 'utf8').replace('\n', '')
-        return pageinfo
 
     # 获取useragent信息
     def get_useragent(self):
         ua = Info.useragent(Info)
         useragent = random.choice(ua)
         return useragent
+
+    menu_url = r'http://maoyan.com'
+    cinemas_url = r'http://maoyan.com/cinemas'
+    films_url = r'http://maoyan.com/films'
+    ua = Info.useragent(Info)
+
+    header = {  # 'User-Agent':random.choice(ua),
+        'Cookie': '__mta=209427373.1539761301494.1539762952557.1539762961002.9; uuid_n_v=v1; _lxsdk_cuid=16680ece7b24-0009952abea1ba-36664c08-100200-16680ece7b4c8; uuid=F562ADF0D1DE11E88D04613460674A3D348BFA2AB0584371B57AE75E1D338156; _csrf=d3fdc5d651971c2768bb04be827b2fc01382497dbf53f1104a9334846d7ece0c; _lxsdk=F562ADF0D1DE11E88D04613460674A3D348BFA2AB0584371B57AE75E1D338156; __mta=108886845.1539762947396.1539762947396.1539762949099.2; _lxsdk_s=%7C%7C0',
+        'Host': 'maoyan.com',
+        'Pragma': 'no-cache',
+        'Upgrade-Insecure-Requests': 1
+    }
+
+    def get_response(self, link):
+
+        try:
+            response = requests.get(link, headers=self.header, allow_redirects=False)
+            # response = urlopen(link).read()
+            if response.status_code == 200:
+                pageinfo = str(response, 'utf8').replace('\n', '')
+                return pageinfo
+            else:
+                print(response.status_code)
+                pass
+
+        except:
+            return self.get_response(link)
 
     # 打开影片信息页
     def movieResponse(self, movieID: str):

@@ -59,7 +59,7 @@ logging.basicConfig(
 
 class modle:
     # 获取全国影院链接地址方法（使用）
-    def getcinemaslink2(self):
+    def getcinemaslink(self):
         print('=========开始获取取全国影院链接地址=========')
         city_sql = 'SELECT DISTINCT city_id FROM maoyan_cinema_link ORDER BY city_id;'
         city_list = SqlExecuate.unexecSQL(city_sql)

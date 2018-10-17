@@ -41,27 +41,35 @@
 # @ContactPhone : 13121961510 
 # @Date  : 2018-09-17 - 15:16
 # @Desc  : 配置信息
+from Maoyan.maoyan_Util import Properties
+
+global config
+
+PropertiesFile = r'../conf/maoyanSpider.conf'
+
+config = Properties(PropertiesFile).getProperties()
+
 
 class DatabaseInfo:
     # 数据库连接
-    mysql_host = '192.168.30.111'
-    mysql_port = 3306
-    mysql_user = 'root'
-    mysql_passwd = '123456'
-    mysql_charset = 'utf8'
-    mysql_database = 'spiderInc'
+    mysql_host = config['Mysql']['save']['host']
+    mysql_port = int(config['Mysql']['save']['port'])
+    mysql_user = config['Mysql']['save']['user']
+    mysql_passwd = config['Mysql']['save']['passwd']
+    mysql_charset = config['Mysql']['save']['charset']
+    mysql_database = config['Mysql']['save']['database']
 
 class Info:
     def datefilepath(self):
         # 数据落地到本地文件路径
-        cinema_file_path = r'./data/cinemainfo.data'
-        show_file_path = r'./data/showinfo.data'
+        cinema_file_path = config['DataFile']['cinemainfo']
+        show_file_path = config['DataFile']['showinfo']
 
     def logfilepath(self, name):
         # 日志输出路径
-        error_path = r'./logs/error.log'
-        info_path = r'./logs/info.log'
-        warning_path = r'./logs/warning.log'
+        error_path = config['Logfile']['error']
+        info_path = config['Logfile']['info']
+        warning_path = config['Logfile']['warning']
 
         if name == 'error_path':
             return error_path

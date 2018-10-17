@@ -55,7 +55,7 @@ logging.basicConfig(
 )
 
 
-class pipeline:
+class mysql_pipeline:
 
     # 构建大量数据sql入库语句
     def mysqlAllbuild(self, tbl, tablename: str):

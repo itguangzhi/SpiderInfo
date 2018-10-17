@@ -63,14 +63,17 @@ logging.basicConfig(
 )
 
 
-
-
-class Pares:
+class CinemaPares:
     '''
     影院信息解析
     '''
-    # 获取影院服务信息,传入link只为了获取影院ID
     def cinema_pares(self, pageinfo, link):
+        '''
+        获取影院服务信息,传入link只为了获取影院ID
+        :param pageinfo: 请求的html页面
+        :param link: 当前影院的url
+        :return: 影院基础信息，字典的形式 cinemainfo
+        '''
         cinemainfo = {}
         cinemaservicereg = r'<div class="cinema-brief-container">(.*?)<div class="cinema-map"'
         cinemaservice = re.findall(cinemaservicereg, pageinfo, re.M)[0]
@@ -109,11 +112,17 @@ class Pares:
         logging.debug('cinemainfo:%s' % str(cinemainfo))
         return cinemainfo
 
+
+class ShowPares:
     '''
         排映信息解析
     '''
-    # 获取影院排期
     def getcinemashowinfo(self, pageinfo):
+        '''
+        获取影院排期
+        :param pageinfo: 影院解析的页面
+        :return: 当前影院中的所有排期 字典类型 showlist
+        '''
         showlist = []
         # 限制匹配范围
         showinforeg = r'<div class="container" id="app"(.*?)<div class="big-map-modal"'
@@ -166,11 +175,18 @@ class Pares:
             logging.debug("showlist:%s" % str(showlist))
         return showlist
 
+
+class MoviePares:
     '''
        影片信息解析
     '''
-    # 影片信息解析
     def movie_pares(self, page, movieID: str):
+        '''
+        影片信息解析
+        :param page: 影片页面
+        :param movieID: 影片ID
+        :return: 影片信息 字典类型 pageinfo
+        '''
         pageinfo = {}
         pageinfo['movie_id'] = movieID
         movieREG = '<span class="info-title-content">(.*?)</span>'
