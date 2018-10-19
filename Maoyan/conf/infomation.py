@@ -45,21 +45,27 @@ from Maoyan.maoyan_Util import Properties
 
 global config
 
-PropertiesFile = r'../conf/maoyanSpider.conf'
+PropertiesFile = r'D:\python\github\SpiderInfo\Maoyan\conf\maoyanSpider.conf'
 
 config = Properties(PropertiesFile).getProperties()
 
 
 class DatabaseInfo:
-    # 数据库连接
+    # mysql 数据库连接
     mysql_host = config['Mysql']['save']['host']
     mysql_port = int(config['Mysql']['save']['port'])
     mysql_user = config['Mysql']['save']['user']
     mysql_passwd = config['Mysql']['save']['passwd']
     mysql_charset = config['Mysql']['save']['charset']
     mysql_database = config['Mysql']['save']['database']
+    # redis 数据库连接
+    redis_host = config['Redis']['proxy']['host']
+    redis_passwd = config['Redis']['proxy']['passwd']
+    redis_port = int(config['Redis']['proxy']['port'])
 
 class Info:
+    GetResponse_ErrorWait = int(config['Response']['Error']['Wait_Time'])
+
     def datefilepath(self):
         # 数据落地到本地文件路径
         cinema_file_path = config['DataFile']['cinemainfo']
@@ -79,8 +85,6 @@ class Info:
             return warning_path
         else:
             print("参数错误，请核查")
-
-
 
     def threadinfo(self):
         # 线程最大值

@@ -40,52 +40,59 @@
 # @ContactPhone : 13121961510
 # @Date  : 2018-09-17 - 15:25
 # @Desc  : 页面下载器
-from random import random
-from urllib.request import urlopen
+import time
+from urllib import request
 
-import requests
+from fake_useragent import UserAgent
 
 from Maoyan.conf.infomation import Info
+from Maoyan.controller import controller
 
+controller = controller()
+Info = Info()
 
 class Downloader:
 
-    # 获取useragent信息
-    def get_useragent(self):
-        ua = Info.useragent(Info)
-        useragent = random.choice(ua)
-        return useragent
 
     menu_url = r'http://maoyan.com'
     cinemas_url = r'http://maoyan.com/cinemas'
     films_url = r'http://maoyan.com/films'
-    ua = Info.useragent(Info)
 
-    header = {  # 'User-Agent':random.choice(ua),
-        'Cookie': '__mta=209427373.1539761301494.1539762952557.1539762961002.9; uuid_n_v=v1; _lxsdk_cuid=16680ece7b24-0009952abea1ba-36664c08-100200-16680ece7b4c8; uuid=F562ADF0D1DE11E88D04613460674A3D348BFA2AB0584371B57AE75E1D338156; _csrf=d3fdc5d651971c2768bb04be827b2fc01382497dbf53f1104a9334846d7ece0c; _lxsdk=F562ADF0D1DE11E88D04613460674A3D348BFA2AB0584371B57AE75E1D338156; __mta=108886845.1539762947396.1539762947396.1539762949099.2; _lxsdk_s=%7C%7C0',
-        'Host': 'maoyan.com',
-        'Pragma': 'no-cache',
-        'Upgrade-Insecure-Requests': 1
-    }
 
     def get_response(self, link):
 
-        try:
-            response = requests.get(link, headers=self.header, allow_redirects=False)
-            # response = urlopen(link).read()
-            if response.status_code == 200:
-                pageinfo = str(response, 'utf8').replace('\n', '')
-                return pageinfo
-            else:
-                print(response.status_code)
-                pass
+        db = controller.connectionDB('redis')
 
+        try:
+            proxy = db.rpop("proxies").decode('utf-8')
+            req = request.Request(link)
+            req.add_header('User-Agent', UserAgent().random)
+            # 创建一个ProxyHandler对象
+            proxy_support = request.ProxyHandler({'http': proxy})
+            # 创建一个opener对象
+            opener = request.build_opener(proxy_support)
+            # 给request装载opener
+            request.install_opener(opener)
+            # 打开一个url
+            try:
+                response = request.urlopen(req, timeout=120)
+                pageinfo = response.read().decode().replace('\n', '')
+                # print(pageinfo)
+                return pageinfo
+            except:
+                return self.get_response(link)
         except:
+            time.sleep(Info.GetResponse_ErrorWait)
             return self.get_response(link)
+
 
     # 打开影片信息页
     def movieResponse(self, movieID: str):
         url = 'https://piaofang.maoyan.com/movie/%s' % movieID
-        HTMLpage = urlopen(url)
-        page = HTMLpage.read().decode('utf-8')
+        page = self.get_response(self, url)
+        # print(page)
         return page
+
+    def cityResponse(self):
+        url = 'http://maoyan.com/ajax/cities'
+        return self.get_response(self, url)

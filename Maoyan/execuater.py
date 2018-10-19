@@ -64,16 +64,15 @@ class SqlExecuate:
     # 异步sql
     @MaoYan_Tools.async
     def execSQL(self, sql):
-        conn = controller.connectionDB()
+        conn = controller.connectionDB('mysql')
         try:
             cur = conn.cursor()
             num = cur.execute(sql)
-            res = cur.fetchall()
             logging.info('sql 返回值：%s' % str(num))
             cur.close()
             conn.commit()
             conn.close()
-            return res
+            return num
         except:
             logging.error('SQL执行失败，执行语句为:%s' % str(sql))
             cur.close()
@@ -81,7 +80,7 @@ class SqlExecuate:
 
     # 同步执行SQL
     def unexecSQL(self, sql):
-        conn = controller.connectionDB()
+        conn = controller.connectionDB('mysql')
         cur = conn.cursor()
         cur.execute(sql)
         res = cur.fetchall()

@@ -42,6 +42,7 @@
 # @Date  : 2018-09-17 - 15:21
 # @Desc  : 页面解析
 import datetime
+import json
 import logging
 import re
 
@@ -76,6 +77,7 @@ class CinemaPares:
         '''
         cinemainfo = {}
         cinemaservicereg = r'<div class="cinema-brief-container">(.*?)<div class="cinema-map"'
+        logging.info(re.findall(cinemaservicereg, pageinfo, re.M))
         cinemaservice = re.findall(cinemaservicereg, pageinfo, re.M)[0]
         cinemanamereg = r'<h3 class="name text-ellipsis">(.*?)</h3>'
         cinemaaddrreg = r'<div class="address text-ellipsis">(.*?)</div>'
@@ -213,3 +215,27 @@ class MoviePares:
 
         logging.debug('movie_info:%s' % pageinfo)
         return pageinfo
+
+
+class CityPares:
+    '''
+        城市信息解析更新
+    '''
+
+    def city_pares(self, page):
+        city_dict = json.loads(page)['letterMap']
+        city_list = []
+        for citymap in city_dict:
+            city_list.extend(city_dict[citymap])
+            for i in city_dict[citymap]:
+                cityinfo = {}
+                cityinfo['city_id'] = i['id']
+                cityinfo['city_name'] = i['nm']
+                cityinfo['city_name_pinyin'] = i['py']
+                if '' == i['nm']:
+                    cityinfo['city_info_id'] = '-'
+                else:
+                    cityinfo['city_info_id'] = '-'
+                city_list.append(cityinfo)
+
+        return city_list

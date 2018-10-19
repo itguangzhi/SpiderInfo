@@ -846,32 +846,32 @@ class RUN:
             #     listlength = len(cinemalinks)
             #     cvr = '(' + str(i) + '/' + str(listlength) + ')'
             cvr = ''
-                logging.info('┏━' + cvr + '━ 打开影院链接cinemalink:%s' % cinemalink)
-                cinemainfo = GetResponse.getcinemapageinfo(GetResponse, cinemalink)[0]
-                logging.info(
-                    '┣━' + cvr + '━━已经获取 %s 影院基本信息的数据' % str(cinemainfo['cinema_name']))
-                cinemainfoSQL = Tools.mysqlbuild(Tools, cinemainfo, 'maoyan_cinema_info')
-                logging.debug('┣━' + cvr + '━━━ 构建影院基本信息SQL： %s ' % str(cinemainfoSQL))
-                results = DataSave.execSQL(DataSave, cinemainfoSQL)
-                logging.info('┣━' + cvr + '━━━━ 影院基本信息入库成功:%s' % str(results))
-                cinemashowes = GetResponse.getcinemapageinfo(GetResponse, cinemalink)[1]
-                logging.info('┣━' + cvr + '━━ 已经获取 %s 影院排映信息' % str(cinemainfo['cinema_name']))
-                logging.debug('┗━' + cvr + '━━━━ 影院排映数据为：%s' % cinemashowes)
+            logging.info('┏━' + cvr + '━ 打开影院链接cinemalink:%s' % cinemalink)
+            cinemainfo = GetResponse.getcinemapageinfo(GetResponse, cinemalink)[0]
+            logging.info(
+                '┣━' + cvr + '━━已经获取 %s 影院基本信息的数据' % str(cinemainfo['cinema_name']))
+            cinemainfoSQL = Tools.mysqlbuild(Tools, cinemainfo, 'maoyan_cinema_info')
+            logging.debug('┣━' + cvr + '━━━ 构建影院基本信息SQL： %s ' % str(cinemainfoSQL))
+            results = DataSave.execSQL(DataSave, cinemainfoSQL)
+            logging.info('┣━' + cvr + '━━━━ 影院基本信息入库成功:%s' % str(results))
+            cinemashowes = GetResponse.getcinemapageinfo(GetResponse, cinemalink)[1]
+            logging.info('┣━' + cvr + '━━ 已经获取 %s 影院排映信息' % str(cinemainfo['cinema_name']))
+            logging.debug('┗━' + cvr + '━━━━ 影院排映数据为：%s' % cinemashowes)
 
-                if len(cinemashowes) == 0:
-                    logging.warning(' %s 影院的排映数据为空' % str(cinemainfo['cinema_name']))
-                    # continue
-                else:
-                    try:
-                        showSQL = Tools.mysqlAllbuild(Tools, cinemashowes, 'maoyan_show_info')
-                        result = DataSave.execSQL(DataSave, showSQL)
-                        logging.info('┗━' + cvr + '━━━━ 影院排映信息入库成功:%s' % str(result))
-                        # i += 1
-                        time.sleep(spider_v)
-                    except:
-                        logging.ERROR('构建sql失败，' + '影院地址为：%s' % str(cinemalink) + '源数据为：%s' % str(cinemashowes))
-                    # continue
-                # cinemalinks.remove(cinemalink)
+            if len(cinemashowes) == 0:
+                logging.warning(' %s 影院的排映数据为空' % str(cinemainfo['cinema_name']))
+                # continue
+            else:
+                try:
+                    showSQL = Tools.mysqlAllbuild(Tools, cinemashowes, 'maoyan_show_info')
+                    result = DataSave.execSQL(DataSave, showSQL)
+                    logging.info('┗━' + cvr + '━━━━ 影院排映信息入库成功:%s' % str(result))
+                    # i += 1
+                    time.sleep(spider_v)
+                except:
+                    logging.ERROR('构建sql失败，' + '影院地址为：%s' % str(cinemalink) + '源数据为：%s' % str(cinemashowes))
+                # continue
+            # cinemalinks.remove(cinemalink)
 
         for cinemalink in cinemalinks:
             print(len(cinemalink))

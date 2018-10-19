@@ -43,6 +43,7 @@ import datetime
 import logging
 
 import pymysql
+import redis
 import threadpool
 from DBUtils.PooledDB import PooledDB
 
@@ -54,8 +55,8 @@ logging.basicConfig(
     format='[%(asctime)s] [%(filename)s] [line:%(lineno)d] [%(levelname)s] %(message)s',
     # format='[%(asctime)s] [line:%(lineno)d] [%(levelname)s] %(message)s',
     datefmt='%Y-%m-%d %H:%M:%S,%a',
-    filename=Info.logfilepath(Info, 'warning_path'),
-    filemode='w'
+    # filename=Info.logfilepath(Info, 'warning_path'),
+    # filemode='w'
 )
 
 
@@ -68,28 +69,38 @@ class controller:
         [pool.putRequest(req) for req in requests]
         pool.wait()
 
-    def connectionDB(self):
-        # 连接池
-        pool = PooledDB(
-            pymysql,
-            mincached=2,
-            maxcached=5,
-            maxshared=3,
-            maxconnections=6,
-            host=DatabaseInfo.mysql_host,
-            port=DatabaseInfo.mysql_port,
-            user=DatabaseInfo.mysql_user,
-            passwd=DatabaseInfo.mysql_passwd,
-            db=DatabaseInfo.mysql_database,
-            charset=DatabaseInfo.mysql_charset
-        )
+    def connectionDB(self, db):
+        if db == 'mysql':
+            # mysql连接池
+            pool = PooledDB(
+                pymysql,
+                mincached=2,
+                maxcached=5,
+                maxshared=3,
+                maxconnections=6,
+                host=DatabaseInfo.mysql_host,
+                port=DatabaseInfo.mysql_port,
+                user=DatabaseInfo.mysql_user,
+                passwd=DatabaseInfo.mysql_passwd,
+                db=DatabaseInfo.mysql_database,
+                charset=DatabaseInfo.mysql_charset
+            )
 
-        try:
-            conn = pool.connection()
-            # conn.cursor()
-            return conn
-        except Exception as e:
-            logging.error('数据库获取连接失败，报错日志为：%s' % e)
+            try:
+                conn = pool.connection()
+                # conn.cursor()
+                return conn
+            except Exception as e:
+                logging.error('数据库获取连接失败，报错日志为：%s' % e)
+        elif db == 'redis':
+            try:
+                conn = redis.Redis(host=DatabaseInfo.redis_host,
+                                   port=DatabaseInfo.redis_port,
+                                   password=DatabaseInfo.redis_passwd
+                                   )
+                return conn
+            except Exception as e:
+                logging.error('数据库获取连接失败，报错日志为：%s' % e)
 
     # 针对城市信息，针对性的做一个城市列表转字典
     def cityinfo_list2dict(self, listinfo):

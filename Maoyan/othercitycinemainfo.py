@@ -30,13 +30,13 @@
                   别人笑我忒疯癫，我笑自己命太贱；
                   不见满街漂亮妹，哪个归得程序员？
 """
-# @File  : SELENIUM_USEing.py
+# @File  : othercity_cinemainfo.py
 # @Author: huguangzhi
 # @design: HP
 # @ContactEmail : huguangzhi@ucsdigital.com.com
 # @ContactPhone : 13121961510
 # @Date  : 2018/9/2 - 17:10
-# @Desc  : 自动化测试软件的测试使用情况
+# @Desc  :
 import re
 import time
 
@@ -68,6 +68,12 @@ def city_data(sqls):
 
 
 def builder(cityid, linklist):
+    '''
+    城市信息的城市ID和当前城市下的所有影院合并
+    :param cityid:
+    :param linklist:
+    :return:
+    '''
     values = []
     for link in linklist:
         # print(link)

@@ -41,14 +41,15 @@
 # @Desc  : 主程序控制器
 import datetime
 import logging
+import sys
 
 from Maoyan.conf.infomation import Info
 from Maoyan.controller import controller
 from Maoyan.downloader import Downloader
 from Maoyan.execuater import SqlExecuate
-from Maoyan.maoyan_Util import Properties, MaoYan_Tools
+from Maoyan.maoyan_Util import MaoYan_Tools
 from Maoyan.modle import modle
-from Maoyan.parse import MoviePares, CinemaPares, ShowPares
+from Maoyan.parse import MoviePares, CinemaPares, ShowPares, CityPares
 from Maoyan.pipeline import mysql_pipeline, file_pipeline
 
 ShowPares = ShowPares()
@@ -62,56 +63,112 @@ MaoYan_Tools = MaoYan_Tools()
 Downloader = Downloader()
 SqlExecuate = SqlExecuate()
 Info = Info()
-# 配置文件中还没有传入配置参数文件目录
-Properties = Properties('')
 
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO,
     # format='[%(asctime)s] [%(filename)s] [line:%(lineno)d] [%(levelname)s] %(message)s',
     format='[%(asctime)s] [line:%(lineno)d] [%(levelname)s] %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S,%a',
-    # filename=Info.logfilepath('info_path'),
+    datefmt='%Y-%m-%d %H:%M:%S,%a'
+    # ,filename=Info.logfilepath('info_path'),
     # filemode='w'
 )
 
+db = controller.connectionDB('redis')
 
 class Run:
     nowdatetime = str(datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S'))
     print('爬虫开始%s' % nowdatetime)
 
+    def get_cinemainfo(self, cinemalink: str):
+        '''
+                获取影院服务信息
+                :param cinemalink: 影院链接
+                :return: 没有返回，直接数据入库了
+                '''
+        cinema_page = Downloader.get_response(cinemalink)
+        logging.info(cinema_page)
+        try:
+            cinema_dict = CinemaPares.cinema_pares(cinema_page, cinemalink)
+            logging.info(cinema_dict)
+            cinema_sql = mysql_pipeline.mysqlbuild(tablename='maoyan_cinema_info', tbl=cinema_dict)
+            res = SqlExecuate.execSQL(cinema_sql)
+            logging.info(res)
+        except:
+            db.rpush("error_links", cinemalink)
+            print(cinemalink)
+            print(cinema_page)
+
     def cinema_run(self):
         # 获取全国范围的影院链接
-        # countrywide_cinemaslink = modle.getcinemaslink()
-        countrywide_cinemaslink = [['http://maoyan.com/cinema/2']]
+        countrywide_cinemaslink = modle.getcinemaslink()
+        # countrywide_cinemaslink = [['http://maoyan.com/cinema/2']]
         for cinemalinks in countrywide_cinemaslink:
             for cinemalink in cinemalinks:
                 logging.info(cinemalink)
-                print(cinemalink)
-                cinema_page = Downloader.get_response(cinemalink)
-                logging.info(cinema_page)
-                print(cinema_page)
-                break
-            break
+                self.get_cinemainfo(cinemalink=cinemalink)
+                controller.threadpoolcontronl(self.get_cinemainfo, cinemalink)
+
+    def get_showinfo(self, cinemalink):
+        '''
+        获取影院的排映信息
+        :param cinemalink:
+        :return:
+        '''
+        cinema_page = Downloader.get_response(cinemalink)
+        logging.info(cinema_page)
+        try:
+            show_dict = ShowPares.getcinemashowinfo(cinema_page)
+            logging.info(show_dict)
+            show_sql = mysql_pipeline.mysqlAllbuild(tablename='maoyan_show_info', tbl=show_dict)
+            res = SqlExecuate.execSQL(show_sql)
+            logging.info(res)
+        except:
+            db.rpush("error_links", cinemalink)
+            print(cinemalink)
+            print(cinema_page)
 
     def show_run(self):
-        pass
+        # 获取全国范围的影院链接
+        countrywide_cinemaslink = modle.getcinemaslink()
+        # countrywide_cinemaslink = [['http://maoyan.com/cinema/12935']]
+        for cinemalinks in countrywide_cinemaslink:
+            for cinemalink in cinemalinks:
+                logging.info(cinemalink)
+                self.get_showinfo(cinemalink)
 
     def city_run(self):
-        pass
+        try:
+            download = Downloader.cityResponse()
+            city_list = CityPares.city_pares(download)
+            sql = mysql_pipeline.mysqlAllbuild(tbl=city_list, tablename='maoyan_city_info')
+            res = SqlExecuate.execSQL(sql)
+            logging.info(res)
+        finally:
+            print('GET CITY INFO ERROR ')
+            return self.cinema_run
 
+    def movie_run(self):
+        pass
 
 if __name__ == '__main__':
     Run = Run()
     Run.cinema_run()
 
-    # _options = sys.argv[1]
-    # if _options == 'cinemainfo':
-    #     Run.cinema_run()
-    #
-    # elif _options == 'showinfo':
-    #     Run.show_run()
-    #
-    # elif _options == 'cityinfo':
-    #     Run.city_run()
-    #
-    # else:print('ERROR ：%s参数错误'%str(_options))
+    try:
+        _options = sys.argv[1]
+
+        # if _options == 'cinemainfo':
+        #     Run.cinema_run()
+        #
+        # elif _options == 'showinfo':
+        #     Run.show_run()
+        #
+        # elif _options == 'cityinfo':
+        #     Run.city_run()
+
+        # elif _options == 'movieinfo':
+        #     Run.city_run()
+        #
+        # else:print('ERROR ：%s参数错误'%str(_options))
+    except:
+        print('请输入参数')
