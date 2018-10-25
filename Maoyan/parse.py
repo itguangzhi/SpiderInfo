@@ -114,7 +114,6 @@ class CinemaPares:
         logging.debug('cinemainfo:%s' % str(cinemainfo))
         return cinemainfo
 
-
 class ShowPares:
     '''
         排映信息解析
@@ -177,7 +176,6 @@ class ShowPares:
             logging.debug("showlist:%s" % str(showlist))
         return showlist
 
-
 class MoviePares:
     '''
        影片信息解析
@@ -216,12 +214,10 @@ class MoviePares:
         logging.debug('movie_info:%s' % pageinfo)
         return pageinfo
 
-
 class CityPares:
     '''
         城市信息解析更新
     '''
-
     def city_pares(self, page):
         city_dict = json.loads(page)['letterMap']
         city_list = []

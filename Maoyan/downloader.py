@@ -89,7 +89,7 @@ class Downloader:
     # 打开影片信息页
     def movieResponse(self, movieID: str):
         url = 'https://piaofang.maoyan.com/movie/%s' % movieID
-        page = self.get_response(self, url)
+        page = self.get_response(url)
         # print(page)
         return page
 

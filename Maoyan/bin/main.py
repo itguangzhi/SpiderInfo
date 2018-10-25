@@ -98,15 +98,17 @@ class Run:
             print(cinemalink)
             print(cinema_page)
 
-    def cinema_run(self):
-        # 获取全国范围的影院链接
-        countrywide_cinemaslink = modle.getcinemaslink()
-        # countrywide_cinemaslink = [['http://maoyan.com/cinema/2']]
-        for cinemalinks in countrywide_cinemaslink:
-            for cinemalink in cinemalinks:
-                logging.info(cinemalink)
-                self.get_cinemainfo(cinemalink=cinemalink)
-                controller.threadpoolcontronl(self.get_cinemainfo, cinemalink)
+    def get_movieinfo(self, movieID: str):
+        '''
+        获取影片信息
+        :param maoyanmovieID: 影片ID
+        :return: 影片ID的影片信息
+        '''
+        page = Downloader.movieResponse(movieID)
+        info = MoviePares.movie_pares(page, movieID)
+        logging.debug('┣ %s 影片数据已经获取 ' % info['movie_name'])
+
+        return info
 
     def get_showinfo(self, cinemalink):
         '''
@@ -126,6 +128,16 @@ class Run:
             db.rpush("error_links", cinemalink)
             print(cinemalink)
             print(cinema_page)
+
+    def cinema_run(self):
+        # 获取全国范围的影院链接
+        countrywide_cinemaslink = modle.getcinemaslink()
+        # countrywide_cinemaslink = [['http://maoyan.com/cinema/2']]
+        for cinemalinks in countrywide_cinemaslink:
+            for cinemalink in cinemalinks:
+                logging.info(cinemalink)
+                self.get_cinemainfo(cinemalink=cinemalink)
+                controller.threadpoolcontronl(self.get_cinemainfo, cinemalink)
 
     def show_run(self):
         # 获取全国范围的影院链接
@@ -148,11 +160,27 @@ class Run:
             return self.cinema_run
 
     def movie_run(self):
-        pass
+        movieinfolist = []
+        movieidSQL = 'SELECT DISTINCT(movie_id) FROM maoyan_show_info WHERE show_date >= CAST(SYSDATE() AS DATE) ORDER BY movie_id;'
+        SQLRES = SqlExecuate.unexecSQL(movieidSQL)
+        logging.info('┏共计有%d部电影数据需要更新' % len(SQLRES))
+        res = str(SQLRES).replace(',', '').replace('((', '').replace('))', '').replace(' ', '').split(')(')
+        for mvID in res:
+            movieID = str(mvID)
+            movieinfomation = self.get_movieinfo(movieID)
+            movieinfolist.append(movieinfomation)
+        try:
+            movieSQL = mysql_pipeline.mysqlAllbuild(movieinfolist, 'maoyan_movie_info')
+            SqlExecuate.execSQL(movieSQL)
+            logging.info('┗%s部影片数据更新完成' % len(movieinfolist))
+        except:
+            logging.error('影片数据更新失败！影片信息为：%s' % str(movieinfolist))
+            logging.error('更新影片的SQL为：%s' % str(movieSQL))
+
 
 if __name__ == '__main__':
     Run = Run()
-    Run.cinema_run()
+    Run.movie_run()
 
     try:
         _options = sys.argv[1]
